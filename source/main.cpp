@@ -3,27 +3,27 @@
 
 #include "terminal.hpp"
 
-#include "image.h"
+#include "basicV2.h"
 #include "soundbank.h"
 #include "soundbank_bin.h"
+
+FIXED current_speed = 0;
+
 
 int main(){
     //enable Border BG
     u8 cbb = 0;
     u8 sbb = 16;
-    REG_BG0CNT = BG_BUILD(cbb, sbb, 0, 0, 1, 0, 0);
+    REG_BG0CNT = BG_BUILD(cbb, sbb, 1, 0, 1, 0, 0);
 
-    //load palette
-    memcpy16(pal_bg_mem, imagePal, imagePalLen/2);
+    // background
+    memcpy16(pal_bg_mem, basicV2Pal, basicV2PalLen/2);
+    LZ77UnCompVram(basicV2Tiles, tile_mem[cbb]);
+    memcpy16(&se_mem[sbb], basicV2Map, basicV2MapLen/2);
 
-    //load tiles
-    LZ77UnCompVram(imageTiles, tile_mem[cbb]);
-    
-    //load image
-    memcpy16(&se_mem[sbb], imageMap, imageMapLen/2);
 
     //enable Text BG
-    REG_BG1CNT = Terminal::setCNT(1, cbb+1, sbb+1);
+    REG_BG1CNT = Terminal::setCNT(1, cbb+3, sbb+4);
     REG_DISPCNT = DCNT_BG0 | DCNT_BG1 | DCNT_MODE0;
 
     // Initialize Interrupts
@@ -40,14 +40,15 @@ int main(){
     Terminal::log("Hello World!");
     mmStart( MOD_FLATOUTLIES, MM_PLAY_ONCE );
 
+    FIXED scrollx = 0;
     while(1){
 
         if(key_hit(KEY_START)){
             Terminal::reset();
         }
 
-        //update song
-        mmFrame();
+        scrollx += 2;
+        REG_BG0HOFS = scrollx;
 
         //update random nunmber
         qran();
