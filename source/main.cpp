@@ -23,12 +23,16 @@ struct playerCharacter{
 
     //velocity and acceleration
     FIXED vy, ay;
+
+    // anim tick for updating per frame, anim_speed for ticks to update sprite, curr_frame 
+    u8 curr_anim_tick, anim_speed, curr_frame;
 };
 
 playerCharacter playerChar = {
     0, MIN_Y,
     16, MAX_SY,
-    0, 0
+    0, 0,
+    0, 6, 0
 };
 
 FIXED current_speed = 0;
@@ -48,6 +52,20 @@ void updateChar(){
         playerChar.vy = 0;
     }
 
+    u8 temp_frame = playerChar.curr_frame;
+    playerChar.curr_anim_tick++;
+    //flying
+    if(playerChar.y > 0){
+        playerChar.curr_frame = 4;
+        //running
+    } else if(playerChar.curr_anim_tick > playerChar.anim_speed){
+        playerChar.curr_anim_tick = 0;
+        playerChar.curr_frame = wrap(playerChar.curr_frame + 1, 0, 4);
+    }
+
+    if(temp_frame != playerChar.curr_frame){
+        obj_mem[0].attr2 = (obj_mem[0].attr2 & ~ATTR2_ID_MASK) | ATTR2_ID((playerChar.curr_frame * 16) + 1);
+    }
 
     obj_set_pos(&obj_mem[0], playerChar.sx, playerChar.sy);
 }
