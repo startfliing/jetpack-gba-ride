@@ -39,7 +39,7 @@ FIXED current_speed = 0;
 
 void updateChar(){
     // acceleration
-    playerChar.ay = key_is_down(KEY_A) ? 3 : -3;
+    playerChar.ay = key_is_down(KEY_A) ? 4 : -4;
 
     // velocity, if @ top or bot, velocity = 0
     playerChar.vy = clamp(playerChar.vy + playerChar.ay, -255, 256);
@@ -113,8 +113,8 @@ int main(){
         }
 
         updateChar();
-        scrollx += 2;
-        REG_BG0HOFS = scrollx;
+        scrollx += 32;
+        REG_BG0HOFS = scrollx>>4;
 
         //update random nunmber
         qran();
