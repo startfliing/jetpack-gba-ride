@@ -39,13 +39,15 @@ void updateChar(){
 
     // velocity, if @ top or bot, velocity = 0
     playerChar.vy = clamp(playerChar.vy + playerChar.ay, -255, 256);
-    if(playerChar.y == MIN_Y || playerChar.y == MAX_Y){
-        playerChar.vy = 0;
-    }
 
     // update true position and screen position
     playerChar.y = clamp(playerChar.y + playerChar.vy, MIN_Y, MAX_Y+1);
     playerChar.sy = clamp(MAX_SY - (playerChar.y>>5), MIN_SY, MAX_SY);
+
+    if(playerChar.y == MIN_Y || playerChar.y == MAX_Y){
+        playerChar.vy = 0;
+    }
+
 
     obj_set_pos(&obj_mem[0], playerChar.sx, playerChar.sy);
 }
