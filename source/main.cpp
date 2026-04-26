@@ -38,7 +38,7 @@ playerCharacter playerChar = {
     16, MAX_SY,
     0, 0,
     0, 6, 0,
-    0, 8, 0
+    0, 5, 0
 };
 
 FIXED current_speed = 0;
@@ -54,9 +54,7 @@ void updateChar(){
     playerChar.y = clamp(playerChar.y + playerChar.vy, MIN_Y, MAX_Y+1);
     playerChar.sy = clamp(MAX_SY - (playerChar.y>>5), MIN_SY, MAX_SY);
 
-    if(playerChar.y == MIN_Y || playerChar.y == MAX_Y){
-        playerChar.vy = 0;
-    }
+    if(playerChar.y == MIN_Y || playerChar.y == MAX_Y) playerChar.vy = 0;
 
     u8 temp_frame = playerChar.curr_frame;
     u8 temp_bullet_frame = playerChar.bullet_frame;
@@ -71,10 +69,10 @@ void updateChar(){
 
         //move x, y, and scale bullets
         //u16 vertical_offset = playerChar.sy-25+(MAX_SY-playerChar.sy)/2;
-        u16 vertical_offset = playerChar.sy-25+(MAX_SY-playerChar.sy)/2;
+        u16 vertical_offset = playerChar.sy-25+((100-playerChar.sy)/2);
 
         //min scale = 1<<7, max scale = 0x7FFFFFF
-        u16 scale_factor = playerChar.y * (2<<8)/MAX_Y;
+        u16 scale_factor = clamp(playerChar.y * (2<<8)/MAX_Y, 64, 2<<8);
 
         obj_set_pos(&obj_mem[1], playerChar.sx-54, vertical_offset);
         obj_aff_scale_inv(&obj_aff_mem[1], scale_factor, scale_factor);
