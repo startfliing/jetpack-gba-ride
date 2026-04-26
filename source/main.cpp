@@ -71,12 +71,12 @@ void updateChar(){
 
         //move x, y, and scale bullets
         //u16 vertical_offset = playerChar.sy-25+(MAX_SY-playerChar.sy)/2;
-        u16 vertical_offset = playerChar.sy-25+((100-playerChar.sy)/2);
+        u16 vertical_offset = playerChar.sy-25+((MAX_SY-playerChar.sy)/2);
 
         //min scale = 1<<7, max scale = 0x7FFFFFF
         u16 scale_factor = clamp(playerChar.y * (2<<8)/MAX_Y, 64, 2<<8);
 
-        obj_set_pos(&obj_mem[1], playerChar.sx-54, vertical_offset);
+        obj_set_pos(&obj_mem[1], playerChar.sx-53, vertical_offset);
         obj_aff_scale_inv(&obj_aff_mem[1], scale_factor, scale_factor);
 
 
@@ -138,8 +138,8 @@ int main(){
     //bullets
     memcpy16(&tile_mem_obj[0][128], bulletsTiles, bulletsTilesLen/2);
     obj_set_attr(&obj_mem[1],
-        ATTR0_SQUARE | ATTR0_AFF_DBL | ATTR0_Y(playerChar.sy),
-        ATTR1_BUILDA(playerChar.sx-52, 3, 1),
+        ATTR0_SQUARE | ATTR0_HIDE | ATTR0_Y(playerChar.sy),
+        ATTR1_BUILDA(playerChar.sx-53, 3, 1),
         ATTR2_BUILD(129, 0, 0)
     );
     obj_aff_identity(&obj_aff_mem[1]);
