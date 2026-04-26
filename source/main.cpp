@@ -5,10 +5,12 @@
 
 #include "basicV2.h"
 #include "player.h"
+#include "bullets.h"
+
 #include "soundbank.h"
 #include "soundbank_bin.h"
 
-#define MAX_SY 108
+#define MAX_SY 104
 #define MIN_SY 4
 
 #define MAX_Y 0xD00
@@ -26,13 +28,17 @@ struct playerCharacter{
 
     // anim tick for updating per frame, anim_speed for ticks to update sprite, curr_frame 
     u8 curr_anim_tick, anim_speed, curr_frame;
+
+    // anim tick for updating per frame, anim_speed for ticks to update sprite, curr_frame 
+    u8 buller_anim_tick, bullet_speed, bullet_frame;
 };
 
 playerCharacter playerChar = {
     0, MIN_Y,
     16, MAX_SY,
     0, 0,
-    0, 6, 0
+    0, 6, 0,
+    0, 8, 0
 };
 
 FIXED current_speed = 0;
@@ -53,18 +59,55 @@ void updateChar(){
     }
 
     u8 temp_frame = playerChar.curr_frame;
+    u8 temp_bullet_frame = playerChar.bullet_frame;
     playerChar.curr_anim_tick++;
+    
     //flying
     if(playerChar.y > 0){
         playerChar.curr_frame = 4;
+
+        //unhide bullets. 
+        obj_unhide(&obj_mem[1], ATTR0_AFF_DBL);
+
+        //move x, y, and scale bullets
+        //u16 vertical_offset = playerChar.sy-25+(MAX_SY-playerChar.sy)/2;
+        u16 vertical_offset = playerChar.sy-25+(MAX_SY-playerChar.sy)/2;
+
+        //min scale = 1<<7, max scale = 0x7FFFFFF
+        u16 scale_factor = playerChar.y * (2<<8)/MAX_Y;
+
+        obj_set_pos(&obj_mem[1], playerChar.sx-54, vertical_offset);
+        obj_aff_scale_inv(&obj_aff_mem[1], scale_factor, scale_factor);
+
+
+        playerChar.buller_anim_tick++;
+        if(playerChar.buller_anim_tick == playerChar.bullet_speed){
+            playerChar.buller_anim_tick = 0;
+            playerChar.bullet_frame = clamp(playerChar.bullet_frame + 1, 0, 12);
+            if(playerChar.bullet_frame == 7){
+                playerChar.bullet_frame = 3;
+            }
+
+            if(key_is_up(KEY_A) && playerChar.bullet_frame >= 3 && playerChar.bullet_frame <= 7) playerChar.bullet_frame = 8;
+
+            if(key_is_down(KEY_A) && playerChar.bullet_frame >=8 ) playerChar.bullet_frame = 0;
+        }
+
         //running
     } else if(playerChar.curr_anim_tick > playerChar.anim_speed){
+        obj_hide(&obj_mem[1]);
         playerChar.curr_anim_tick = 0;
         playerChar.curr_frame = wrap(playerChar.curr_frame + 1, 0, 4);
+        playerChar.buller_anim_tick = 0;
+        playerChar.bullet_frame = 0;
     }
 
     if(temp_frame != playerChar.curr_frame){
         obj_mem[0].attr2 = (obj_mem[0].attr2 & ~ATTR2_ID_MASK) | ATTR2_ID((playerChar.curr_frame * 16) + 1);
+    }
+
+    if(temp_bullet_frame != playerChar.bullet_frame){
+        obj_mem[1].attr2 = (obj_mem[1].attr2 & ~ATTR2_ID_MASK) | ATTR2_ID((playerChar.bullet_frame * 64) + 129);
     }
 
     obj_set_pos(&obj_mem[0], playerChar.sx, playerChar.sy);
@@ -83,6 +126,7 @@ int main(){
 
     oam_init(obj_mem, 128);
 
+    //player
     memcpy16(tile_mem_obj, playerTiles, playerTilesLen/2);
     LZ77UnCompVram(playerPal, pal_obj_mem);
     obj_set_attr(&obj_mem[0],
@@ -90,6 +134,15 @@ int main(){
         ATTR1_BUILDR(playerChar.sx, 2, 0, 0),
         ATTR2_BUILD(1, 0, 0)
     );
+
+    //bullets
+    memcpy16(&tile_mem_obj[0][128], bulletsTiles, bulletsTilesLen/2);
+    obj_set_attr(&obj_mem[1],
+        ATTR0_SQUARE | ATTR0_AFF_DBL | ATTR0_Y(playerChar.sy),
+        ATTR1_BUILDA(playerChar.sx-52, 3, 1),
+        ATTR2_BUILD(129, 0, 0)
+    );
+    obj_aff_identity(&obj_aff_mem[1]);
 
     //enable Text BG
     REG_BG1CNT = Terminal::setCNT(1, cbb+3, sbb+4);
