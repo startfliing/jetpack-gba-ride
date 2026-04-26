@@ -1,0 +1,1 @@
+-o tilemaps.s -gt -gB4 -mR4 -mLf -fx graphics\tileset.png -mz!

@@ -3,7 +3,9 @@
 
 #include "terminal.hpp"
 
-#include "basicV2.h"
+#include "zone1.h"
+#include "tileset.h"
+
 #include "player.h"
 #include "bullets.h"
 
@@ -115,12 +117,12 @@ int main(){
     //enable Border BG
     u8 cbb = 0;
     u8 sbb = 16;
-    REG_BG0CNT = BG_BUILD(cbb, sbb, 1, 0, 1, 0, 0);
+    REG_BG0CNT = BG_BUILD(cbb, sbb, 0, 0, 1, 0, 0);
 
     // background
-    memcpy16(pal_bg_mem, basicV2Pal, basicV2PalLen/2);
-    LZ77UnCompVram(basicV2Tiles, tile_mem[cbb]);
-    memcpy16(&se_mem[sbb], basicV2Map, basicV2MapLen/2);
+    LZ77UnCompVram(tilesetPal, pal_bg_mem);
+    LZ77UnCompVram(tilesetTiles, tile_mem[cbb]);
+    memcpy16(&se_mem[sbb], zone1Map, zone1MapLen/2);
 
     oam_init(obj_mem, 128);
 
