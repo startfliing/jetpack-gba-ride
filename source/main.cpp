@@ -15,8 +15,14 @@
 #define MAX_SY 104
 #define MIN_SY 4
 
+#define MAX_BULLET_SY 70
+#define MIN_BULLET_SY 26
+
 #define MAX_Y 0xD00
 #define MIN_Y 0
+
+#define MIN_SCALE 0
+#define MAX_SCALE 2<<8
 
 struct playerCharacter{
     //true position
@@ -54,7 +60,7 @@ void updateChar(){
 
     // update true position and screen position
     playerChar.y = clamp(playerChar.y + playerChar.vy, MIN_Y, MAX_Y+1);
-    playerChar.sy = clamp(MAX_SY - (playerChar.y>>5), MIN_SY, MAX_SY);
+    playerChar.sy = clamp(MAX_SY - (playerChar.y>>5), MIN_SY, MAX_SY+1);
 
     if(playerChar.y == MIN_Y || playerChar.y == MAX_Y) playerChar.vy = 0;
 
@@ -69,12 +75,11 @@ void updateChar(){
         //unhide bullets. 
         obj_unhide(&obj_mem[1], ATTR0_AFF_DBL);
 
-        //move x, y, and scale bullets
-        //u16 vertical_offset = playerChar.sy-25+(MAX_SY-playerChar.sy)/2;
-        u16 vertical_offset = playerChar.sy-25+((MAX_SY-playerChar.sy)/2);
+        //player sy <4,104> and bullet sy <26,70>
+        int vertical_offset = MIN_BULLET_SY + ((playerChar.sy - MIN_SY)*(MAX_BULLET_SY-MIN_BULLET_SY))/(MAX_SY-MIN_SY);
 
-        //min scale = 1<<7, max scale = 0x7FFFFFF
-        u16 scale_factor = clamp(playerChar.y * (2<<8)/MAX_Y, 64, 2<<8);
+        //min scale = 0, max scale = 2<<8 (Fixed Notation = 0x000002.00)
+        u16 scale_factor = clamp(playerChar.y * (MAX_SCALE)/MAX_Y, MIN_SCALE, MAX_SCALE);
 
         obj_set_pos(&obj_mem[1], playerChar.sx-53, vertical_offset);
         obj_aff_scale_inv(&obj_aff_mem[1], scale_factor, scale_factor);
