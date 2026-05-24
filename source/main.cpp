@@ -88,10 +88,8 @@ void updateChar(){
         playerChar.buller_anim_tick++;
         if(playerChar.buller_anim_tick == playerChar.bullet_speed){
             playerChar.buller_anim_tick = 0;
-            playerChar.bullet_frame = clamp(playerChar.bullet_frame + 1, 0, 12);
-            if(playerChar.bullet_frame == 7){
-                playerChar.bullet_frame = 3;
-            }
+            playerChar.bullet_frame = clamp(playerChar.bullet_frame + 1, 0, 11);
+            if(playerChar.bullet_frame == 7) playerChar.bullet_frame = 3;
 
             if(key_is_up(KEY_A) && playerChar.bullet_frame >= 3 && playerChar.bullet_frame <= 7) playerChar.bullet_frame = 8;
 
@@ -108,11 +106,11 @@ void updateChar(){
     }
 
     if(temp_frame != playerChar.curr_frame){
-        obj_mem[0].attr2 = (obj_mem[0].attr2 & ~ATTR2_ID_MASK) | ATTR2_ID((playerChar.curr_frame * 16) + 1);
+        memcpy16(tile_mem_obj, &playerTiles[playerChar.curr_frame * 128], sizeof(TILE)*8);
     }
 
     if(temp_bullet_frame != playerChar.bullet_frame){
-        obj_mem[1].attr2 = (obj_mem[1].attr2 & ~ATTR2_ID_MASK) | ATTR2_ID((playerChar.bullet_frame * 64) + 129);
+        memcpy16(&tile_mem_obj[0][128], &bulletsTiles[playerChar.bullet_frame * 8 * 64], sizeof(TILE)*32);
     }
 
     obj_set_pos(&obj_mem[0], playerChar.sx, playerChar.sy);
@@ -132,7 +130,7 @@ int main(){
     oam_init(obj_mem, 128);
 
     //player
-    memcpy16(tile_mem_obj, playerTiles, playerTilesLen/2);
+    memcpy16(tile_mem_obj, playerTiles, playerTilesLen/10);
     LZ77UnCompVram(playerPal, pal_obj_mem);
     obj_set_attr(&obj_mem[0],
         ATTR0_BUILD(playerChar.sy, 0, 0, 0, 0, 0 ,0),
@@ -141,7 +139,7 @@ int main(){
     );
 
     //bullets
-    memcpy16(&tile_mem_obj[0][128], bulletsTiles, bulletsTilesLen/2);
+    memcpy16(&tile_mem_obj[0][128], bulletsTiles, bulletsTilesLen/20);
     obj_set_attr(&obj_mem[1],
         ATTR0_SQUARE | ATTR0_HIDE | ATTR0_Y(playerChar.sy),
         ATTR1_BUILDA(playerChar.sx-53, 3, 1),
