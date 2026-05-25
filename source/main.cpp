@@ -5,6 +5,7 @@
 
 #include "zone1.h"
 #include "tileset.h"
+#include "hazards.h"
 
 #include "playerCharacter.hpp"
 
@@ -33,6 +34,10 @@ int main(){
     LZ77UnCompVram(tilesetTiles, tile_mem[cbb]);
     memcpy16(&se_mem[sbb], zone1Map, zone1MapLen/2);
 
+    //yellow lasers
+    REG_BG2CNT = BG_BUILD(cbb+1, sbb+2, 1, 0, 0, 0, 0);
+    LZ77UnCompVram(hazardsTiles, tile_mem[cbb+1]);
+    
     oam_init(obj_mem, 128);
 
     playerChar->init();
