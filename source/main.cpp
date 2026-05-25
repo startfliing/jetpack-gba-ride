@@ -2,6 +2,7 @@
 #include "maxmod.h"
 
 #include "terminal.hpp"
+#include "haz.hpp"
 
 #include "zone1.h"
 #include "tileset.h"
@@ -44,7 +45,7 @@ int main(){
 
     //enable Text BG
     REG_BG1CNT = Terminal::setCNT(1, cbb+3, sbb+4);
-    REG_DISPCNT = DCNT_BG0 | DCNT_BG1 | DCNT_OBJ | DCNT_OBJ_1D | DCNT_MODE0;
+    REG_DISPCNT = DCNT_BG0 | DCNT_BG1 | DCNT_BG2 | DCNT_OBJ | DCNT_OBJ_1D | DCNT_MODE0;
 
     // Initialize Interrupts
     irq_init(nullptr);
@@ -53,8 +54,9 @@ int main(){
 	irq_set( II_VBLANK, mmVBlank, 0);
 	irq_enable(II_VBLANK);
 
-    // Setup is done. Lets put it into action!
-    Terminal::log("Hello World!");
+    //TODO: remove this
+    HazardManager* hm = new HazardManager();
+    hm->createDiag();
 
     FIXED scrollx = 0;
     while(1){
@@ -65,7 +67,9 @@ int main(){
 
         scrollx += 32;
         playerChar->update(scrollx);
+        hm->update(scrollx, *playerChar->getHitBox());
         REG_BG0HOFS = scrollx>>4;
+        REG_BG2HOFS = scrollx>>4;
 
         //update random nunmber
         qran();
