@@ -2,7 +2,6 @@
 
 #include "diagonal_laser.h"
 #include "missile.h"
-#include "obj_tiles.h"
 #include "orange_64_laser.h"
 
 
@@ -15,7 +14,7 @@ hazardAsset diag = {
 
 //pixels
 hazardAsset miss = {
-    (u16*)obj_tilesTiles,
+    (u16*)missileTiles,
     16, 8,
     62, 110
 };
