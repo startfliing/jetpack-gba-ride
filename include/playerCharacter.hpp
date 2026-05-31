@@ -50,7 +50,7 @@ class PlayerCharacter{
             );
 
             //bullets
-            memcpy16(&tile_mem_obj[0][128], bulletsTiles, bulletsTilesLen/20);
+            memcpy16(&tile_mem_obj[0][128], bulletsTiles, bulletsTilesLen/24);
             obj_set_attr(&obj_mem[1],
                 ATTR0_SQUARE | ATTR0_HIDE | ATTR0_Y(sy),
                 ATTR1_BUILDA(sx-53, 3, 1),
