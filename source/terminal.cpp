@@ -112,6 +112,23 @@ void Terminal::drawVal(int val){
     drawVal(intToChar(val%10));
 }
 
+void Terminal::drawVal(long int val){
+    //draw a negative sign but only once
+    if(val < 0){
+        drawVal('-');
+        val = val * -1;
+    }
+
+    //if value is greater than 9
+    if(val > 9){
+        //recurse
+        drawVal(val/10);
+    }
+
+    //base case, sorta
+    drawVal(intToChar(val%10));
+}
+
 //every single char will be drawn with this function, so put in new line logic and screen logic
 void Terminal::drawVal(char c){
     
