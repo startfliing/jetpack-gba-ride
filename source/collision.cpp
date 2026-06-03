@@ -67,9 +67,9 @@ bool Rectangle::collidesWithPill(const Pill& pill) const {
     return collidesWithCircle(pillAsCircle);
 }
 
-void Rectangle::setPos(int dx, int dy) { 
-    x = dx;
-    y = dy;
+void Rectangle::setPos(int nx, int ny) { 
+    x = nx;
+    y = ny;
 }
 
 void Rectangle::rotate(u16 alpha){
@@ -142,9 +142,9 @@ bool Circle::collidesWithPill(const Pill& pill) const {
     return distSquared < (combinedRadius * combinedRadius);
 }
 
-void Circle::setPos(int dx, int dy) { 
-    x = dx;
-    y = dy;
+void Circle::setPos(int nx, int ny) { 
+    x = nx;
+    y = ny;
 }
 
 void Circle::rotate(u16 alpha){
@@ -231,9 +231,13 @@ bool Pill::collidesWithPill(const Pill& pill) const {
     return distSq < (radSum * radSum);
 }
 
-void Pill::setPos(int dx, int dy) { 
-    x1 = dx;
-    y1 = dy;
+void Pill::setPos(int nx, int ny) {
+    int dx = x2-x1;
+    int dy = y2-y1;
+    x1 = nx;
+    y1 = ny;
+    x2 = nx + dx;
+    y2 = ny + dy;
 }
 
 void Pill::rotate(u16 alpha) {

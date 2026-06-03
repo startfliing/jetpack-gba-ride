@@ -22,7 +22,7 @@ public:
     virtual bool collidesWithCircle(const Circle& circle) const = 0;
     virtual bool collidesWithPill(const Pill& pill) const = 0;
 
-    virtual void setPos(int dx, int dy) = 0;
+    virtual void setPos(int nx, int ny) = 0;
     virtual void rotate(u16 alpha) = 0;
 };
 
@@ -62,7 +62,7 @@ public:
     bool collidesWithRectangle(const Rectangle& rect) const override;
     bool collidesWithCircle(const Circle& circle) const override;
     bool collidesWithPill(const Pill& pill) const override;
-    void setPos(int dx, int dy) override;
+    void setPos(int nx, int ny) override;
     void rotate(u16 alpha) override;
 };
 
@@ -94,7 +94,7 @@ public:
     bool collidesWithCircle(const Circle& circle) const override;
     bool collidesWithPill(const Pill& pill) const override;
 
-    void setPos(int dx, int dy) override;
+    void setPos(int nx, int ny) override;
     void rotate(u16 alpha) override;
 };
 
@@ -135,7 +135,7 @@ public:
     bool collidesWithCircle(const Circle& circle) const override;
     bool collidesWithPill(const Pill& pill) const override;
 
-    void setPos(int dx, int dy) override;
+    void setPos(int nx, int ny) override;
 
     // Rotation - rotates both endpoints around the pill's center point
     void rotate(u16 alpha) override;
