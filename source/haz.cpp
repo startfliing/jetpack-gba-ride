@@ -3,6 +3,7 @@
 #include "diagonal_laser.h"
 #include "missile.h"
 #include "orange_64_laser.h"
+#include "redLaserTiles.h"
 
 
 // units = tiles
@@ -24,6 +25,13 @@ hazardAsset orangeLaser = {
     (u16*)orange_64_laserTiles,
     64, 64,
     256, 60
+};
+
+//pixel units
+hazardAsset redLaser = {
+    (u16*)redLaserTilesTiles,
+    0, 0,
+    512, 0
 };
 
 
@@ -151,7 +159,8 @@ void HazardManager::update(int scrollx, Rectangle playerbounds) {
 void HazardManager::createTest() {
     //hazards[hazardsCt++] = new YellowLaser(diag);
     //hazards[hazardsCt++] = new Missile(miss);
-    hazards[hazardsCt++] = new OrangeLaser(orangeLaser);
+    hazards[hazardsCt++] = new RedLaser(redLaser);
+    //hazards[hazardsCt++] = new OrangeLaser(orangeLaser);
 }
 
 #define MISSILE_START_IND 3
@@ -277,4 +286,160 @@ void OrangeLaser::erase() {
     rendered = false;
     // tile between 0 - 63 for drawing to BG
     obj_hide(obj);
+}
+
+// RedLaser implementations
+// tile start bg_mem[cbb+1][64]
+
+u16 getNewSE(int column, u16 tileInd){
+    u16 returnSE = 0;
+    switch(column){
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+        case 20:
+        case 21:
+        case 22:
+        case 23:
+        case 24:
+        case 25:
+        case 26:
+        case 27:
+            returnSE |= tileInd+2;
+            break;
+
+        //tileInd+1
+        case 28:
+            returnSE |= SE_HFLIP;
+        case 1:
+            returnSE |= tileInd+1;
+            break;
+
+        //tileInd
+        case 29: //add horizontal flip
+            returnSE |= SE_HFLIP;
+        case 0: //set tileInd
+            returnSE |= tileInd;
+            break;
+        default:
+            returnSE = 0;
+            break;
+    }
+    return returnSE;
+}
+
+TILE tileset[20];
+
+struct animationframe {
+    u16 tile0, tile1, tile2;
+};
+
+//15 tick increments
+animationframe redlaserAnimation[29] = {
+    {0,0,0},
+    {1,0,0},
+    {2,0,0},
+    {3,6,0},
+    {4,7,0},
+    {4,7,0},
+    {4,8,0},
+    {4,9,0},
+    {4,8,0},
+    {4,9,0},
+    {4,8,17},
+    {4,9,18},
+    {4,8,17},
+    {4,9,18},
+    {4,10,19}, // i = 14
+    {4,10,19},
+    {4,10,19},
+    {4,10,19},
+    {4,10,19},
+    {4,10,19},
+    {4,10,19},
+    {4,10,19}, // i = 21
+    {4,9,18},
+    {4,8,17},
+    {4,7,0},
+    {3,6,0},
+    {2,0,0},
+    {1,0,0},
+    {0,0,0}
+};
+
+void loadLaserAnimation(animationframe af, u16 tileInd){
+    memcpy16(&tile_mem[1][tileInd], &tileset[af.tile0], sizeof(TILE)/2);
+    memcpy16(&tile_mem[1][tileInd+1], &tileset[af.tile1], sizeof(TILE)/2);
+    memcpy16(&tile_mem[1][tileInd+2], &tileset[af.tile2], sizeof(TILE)/2);
+}
+
+void buildLaser(int y, u16 tileInd){
+
+    loadLaserAnimation(redlaserAnimation[0], tileInd);
+
+    SE* bg = se_mem[17];
+    int startInd = ((y*2)+3)*32;
+    for(int j = 0; j < 30; j++){//column
+        u16 newSE = getNewSE(j,tileInd);
+        //top tile
+        bg[startInd+j] = newSE;
+        //bottom tile
+        bg[startInd+j+32] = newSE | SE_VFLIP;
+    }
+}
+
+
+
+void updateLaser(int frame, u16 tileInd){
+    loadLaserAnimation(redlaserAnimation[frame], tileInd);
+}
+
+RedLaser::RedLaser(hazardAsset ha) {
+    asset = ha;
+    tileInd = 65;
+    // calculate hitbox of where player will be when laser is activated
+    hitbox = new Pill(ha.x+(24*14)+53 /*just right of player*/, (ha.y * 16) + 32, ha.x+(24*21)+21 /*just left*/, (ha.y * 16) + 32, 4);
+    rendered = false;
+    erased = false;
+    fixedX = ha.x<<4;
+    y = ha.y;
+
+    LZ77UnCompVram(redLaserTilesTiles, tileset);
+    buildLaser(y, tileInd);
+    
+}
+
+void RedLaser::update(int scrollX, Rectangle playerbounds) {
+    //frame number
+    int dx = ((scrollX - fixedX)>>4)/24;
+    if(dx > 0 && dx < 29){
+        updateLaser(dx, tileInd);
+    }
+
+}
+
+void RedLaser::render() {
+    rendered = true;
+    erased = false;
+
+}
+
+void RedLaser::erase() {
+    erased = true;
+    rendered = false;
 }

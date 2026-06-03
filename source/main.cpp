@@ -38,6 +38,9 @@ int main(){
     //yellow lasers
     REG_BG2CNT = BG_BUILD(cbb+1, sbb+2, 1, 0, 0, 0, 0);
     LZ77UnCompVram(hazardsTiles, tile_mem[cbb+1]);
+
+    //red lasers
+    REG_BG3CNT = BG_BUILD(cbb+1, sbb+1, 0, 0, 0, 0, 0);
     
     oam_init(obj_mem, 128);
 
@@ -45,7 +48,7 @@ int main(){
 
     //enable Text BG
     REG_BG1CNT = Terminal::setCNT(1, cbb+3, sbb+4);
-    REG_DISPCNT = DCNT_BG0 | DCNT_BG1 | DCNT_BG2 | DCNT_OBJ | DCNT_OBJ_1D | DCNT_MODE0;
+    REG_DISPCNT = DCNT_BG0 | DCNT_BG1 | DCNT_BG2 | DCNT_BG3 | DCNT_OBJ | DCNT_OBJ_1D | DCNT_MODE0;
 
     // Initialize Interrupts
     irq_init(nullptr);

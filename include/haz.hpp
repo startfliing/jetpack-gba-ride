@@ -62,7 +62,6 @@ class HazardManager{
 
 class OrangeLaser : public Hazard{
     public:
-        public:
         //probably doesnt need ha at all.
         OrangeLaser(hazardAsset ha);
         void update(int scrollX, Rectangle playerbounds);
@@ -77,10 +76,17 @@ class OrangeLaser : public Hazard{
         u16 alpha;
 };
 
-class RedLaser{
+class RedLaser : public Hazard{
     public:
+        RedLaser(hazardAsset ha);
+        void update(int scrollX, Rectangle playerbounds);
+        void render();
+        void erase();
 
     private:
+        int fixedX;
+        u16 tileInd;
+        u16 y; // 0 - 6 for laser index
 };
 
 class Missile : public Hazard{
