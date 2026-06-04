@@ -152,14 +152,18 @@ void YellowLaser::erase() {
 HazardManager::HazardManager() {
 }
 
-void HazardManager::update(int scrollx, Rectangle playerbounds) {
+void HazardManager::update(int scrollx, PlayerCharacter* player) {
+    
     for(int i = 0; i < hazardsCt; i++) {
-        hazards[i]->update(scrollx, playerbounds);
+        hazards[i]->update(scrollx, *player->getHitBox());
     }
 
     for(int i = 0; i < hazardsCt; i++) {
-        bool hit = hazards[i]->checkCollision(playerbounds);
-        if(hit) Terminal::log("hit something!");
+        bool hit = hazards[i]->checkCollision(*player->getHitBox());
+        if(hit){
+            //death initiate
+            player->dies();
+        };
     }
 }
 

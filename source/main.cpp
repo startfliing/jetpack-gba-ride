@@ -61,6 +61,8 @@ int main(){
     HazardManager* hm = new HazardManager();
     hm->createDiag();
 
+    int speed = 256;
+
     FIXED scrollx = 0;
     while(1){
 
@@ -68,11 +70,16 @@ int main(){
             Terminal::reset();
         }
 
-        scrollx += 32;
-        playerChar->update(scrollx);
-        hm->update(scrollx, *playerChar->getHitBox());
+        scrollx += speed>>3;
+        playerChar->update(scrollx, speed);
+        hm->update(scrollx, playerChar);
         REG_BG0HOFS = scrollx>>4;
         REG_BG2HOFS = scrollx>>4;
+
+        if(playerChar->isDead()){
+            //we can animate here
+            speed = clamp(speed - 1, 0, INT16_MAX);
+        }
 
         //update random nunmber
         qran();

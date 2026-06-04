@@ -4,6 +4,7 @@
 #include "tonc.h"
 #include "collision.hpp"
 #include "terminal.hpp"
+#include "playerCharacter.hpp"
 
 
 //virtual class
@@ -38,7 +39,7 @@ class YellowLaser : public Hazard {
 class HazardManager{
     public:
         HazardManager();
-        void update(int scrollx, Rectangle playerbounds);
+        void update(int scrollx, PlayerCharacter* player);
         void createTest();
 
     private:

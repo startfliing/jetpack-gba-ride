@@ -28,6 +28,7 @@ class PlayerCharacter{
             sy = MAX_SY;
             ay = 0;
             vy = 0;
+            status = 1;
             curr_anim_tick = 0;  
             anim_speed = 6;  
             curr_frame = 0;  
@@ -59,7 +60,20 @@ class PlayerCharacter{
             obj_aff_identity(&obj_aff_mem[1]);
         };
 
-        void update(int scrollX){
+        void update(int scrollX, int speed){
+            switch(status){
+                case 0: //dead
+                    updateDead(scrollX, speed);
+                    break;
+                case 1: //alive
+                    updateAlive(scrollX);
+                    break;
+                default:
+                    break;
+            }
+        };
+
+        void updateAlive(int scrollX){
             // acceleration
             ay = key_is_down(KEY_A) ? 4 : -4;
 
@@ -124,11 +138,66 @@ class PlayerCharacter{
             x = (scrollX>>4) + 16;
             obj_set_pos(&obj_mem[0], sx, sy);
             hitbox->setPosition(x+9, sy+14);
-        };
+        }
+
+        void updateDead(int scrollX, int speed){
+            // acceleration
+            ay = -4;
+
+            // velocity, if @ top or bot, velocity = 0
+            vy = clamp(vy + ay, -255, 256);
+
+            y = y+vy;
+            //check if we hit the ground, if so, flip velocity for bounce
+            if(y < 0){
+                vy = (vy * -1) * 0.60;
+                y *= -1;
+                if(vy > 0x30 /*arbitrary height*/){
+                    //update character frame
+                }
+            }
+            // update true position and screen position
+            y = clamp(y, MIN_Y, MAX_Y+1);
+            sy = clamp(MAX_SY - (y>>5), MIN_SY, MAX_SY+1);
+
+            if(y == MIN_Y || y == MAX_Y) vy = 0;
+
+            u8 temp_frame = curr_frame;
+            u8 temp_bullet_frame = bullet_frame;
+
+            buller_anim_tick++;
+            if(buller_anim_tick == bullet_speed){
+                buller_anim_tick = 0;
+                bullet_frame = clamp(bullet_frame + 1, 8, 11);
+            }
+
+            if(temp_frame != curr_frame){
+                memcpy16(tile_mem_obj, &playerTiles[curr_frame * 128], sizeof(TILE)*8);
+            }
+
+            if(temp_bullet_frame != bullet_frame){
+                memcpy16(&tile_mem_obj[0][128], &bulletsTiles[bullet_frame * 8 * 64], sizeof(TILE)*32);
+            }
+
+            x = (scrollX>>4) + 16;
+            obj_set_pos(&obj_mem[0], sx, sy);
+            hitbox->setPosition(x+9, sy+14);
+        }
 
         Rectangle* getHitBox(){
             return hitbox;
         }
+
+        void dies(){
+            status = 0;
+        };
+
+        bool isDead(){
+            return status == 0;
+        }
+
+        //status 0 = dead, 1 = alive
+        int status;
 
         //true position
         int x, y;
