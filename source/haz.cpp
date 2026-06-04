@@ -6,35 +6,6 @@
 #include "redLaserTiles.h"
 
 
-// units = tiles
-hazardAsset diag = {
-    diagonal_laserMap,
-    8, 8,
-    58, 2
-};
-
-//pixels
-hazardAsset miss = {
-    (u16*)missileTiles,
-    16, 8,
-    62, 110
-};
-
-//pixel units
-hazardAsset orangeLaser = {
-    (u16*)orange_64_laserTiles,
-    64, 64,
-    256, 60
-};
-
-//pixel units
-hazardAsset redLaser = {
-    (u16*)redLaserTilesTiles,
-    0, 0,
-    512, 0
-};
-
-
 // Hazard implementations
 Hazard::~Hazard() {
     delete hitbox;
@@ -45,56 +16,92 @@ bool Hazard::checkCollision(const Rectangle playerBounds) {
 }
 
 // YellowLaser implementations
-YellowLaser::YellowLaser(hazardAsset ha) {
-    asset = ha;
-    hitbox = new Pill((ha.x * 8) + 8, (ha.y * 8) + 8, ((ha.x + ha.width) * 8) - 8, ((ha.y + ha.height) * 8) - 8, 4);
+/**
+ * @brief Construct a new Yellow Laser:: Yellow Laser object
+ * 
+ * Plots both points of the laser included in the asset map.
+ * 
+ * @param x1 
+ * @param y1 
+ * @param x2 
+ * @param y2 
+ * @param assetMap 
+ */
+YellowLaser::YellowLaser(int x1, int y1, int x2, int y2, u16* assetMap) {
+    hitbox = new Pill(x1, y1, x2, y2, 4);
     rendered = false;
     erased = false;
+    map = assetMap;
+
+    //honestly don't know how this logic exactly works,
+    //but when I moved away from HazardAsset, this was the
+    //solution and there were some rendering issues.
+
+    tileWidth = (x2>>3) - (x1>>3);
+    leftTile = x1>>3;
+    //if width is negative, x2 is left of x1
+    if(tileWidth < 0){
+        leftTile = x2>>3;
+        tileWidth *= -1;
+    }
+    tileWidth++;
+
+    tileHeight = (y2>>3) - (y1>>3);
+    topTile = y1>>3;
+    //if width is negative, x2 is left of x1
+    if(tileHeight < 0){
+        topTile = y2>>3;
+        tileHeight *= -1;
+    }
+    topTile--;
+    tileHeight += 2;
+    Terminal::log("TL : <%%,%%> WH <%%,%%>",topTile, leftTile, tileWidth, tileHeight);
 }
 
 void YellowLaser::update(int scrollX, Rectangle playerbounds) {
     //>> 4 for FIXED notation >> 3 for pixel-to-tile ratio
-    bool shouldRender = rendered ? false : (scrollX>>7)+32 > asset.x;
+    bool shouldRender = rendered ? false : (scrollX>>7)+32 > leftTile;
     if(shouldRender) render();
 
-    bool shouldErase = erased ? false : (scrollX>>7) > asset.x + (asset.width + 1);
+    bool shouldErase = erased ? false : (scrollX>>7) > leftTile + (tileWidth + 1);
     if(shouldErase) erase();
 }
 
 void YellowLaser::render() {
+    Terminal::log("rendering!");
     rendered = true;
     erased = false;
     // tile between 0 - 63 for drawing to BG
-    u8 bgx = asset.x & 0x3F;
-    for(int i = 0; i < asset.height; i++) {
+    u8 bgx = leftTile & 0x3F;
+    for(int i = 0; i < tileHeight; i++) {
         //use x to decide which sbb
-        int rowStartInd = 32*(asset.y + i) + /*start x*/(asset.x & 0x1F);
+        int rowStartInd = 32*(topTile + i) + /*start x*/(leftTile & 0x1F);
         
-        if(bgx < (31 - asset.width)) {
-            memcpy16(&se_mem[18][rowStartInd], &asset.map[asset.width * i], asset.width);
+        if(bgx < (31 - tileWidth)) {
+            memcpy16(&se_mem[18][rowStartInd], &map[tileWidth * i], tileWidth);
         } else if(bgx < 31) {
             memcpy16(
                 &se_mem[18][rowStartInd], 
-                &asset.map[asset.width * i], 
+                &map[tileWidth * i], 
                 32 - bgx
             );
 
             memcpy16(&se_mem[19][rowStartInd + (32 - bgx)], 
-                &asset.map[(asset.width * i) + (31 - bgx)], 
-                asset.width - (31 - bgx)
+                &map[(tileWidth * i) + (31 - bgx)], 
+                tileWidth - (31 - bgx)
             );
-        } else if(bgx < (63 - asset.width)) { // fully in sbb 19
-            memcpy16(&se_mem[19][rowStartInd], &asset.map[asset.width * i], asset.width);
+        } else if(bgx < (63 - tileWidth)) { // fully in sbb 19
+            memcpy16(&se_mem[19][rowStartInd], &map[tileWidth * i], tileWidth);
         } else {
             memcpy16(
                 &se_mem[19][rowStartInd], 
-                &asset.map[asset.width * i], 
+                &map[tileWidth * i], 
                 64 - bgx
             );
 
             memcpy16(&se_mem[18][rowStartInd + (64 - bgx)], 
-                &asset.map[(asset.width * i) + (63 - bgx)], 
-                asset.width - (63 - bgx)
+                &map[(tileWidth * i) + (63 - bgx)], 
+                tileWidth - (63 - bgx)
             );
         }
     }
@@ -103,15 +110,15 @@ void YellowLaser::render() {
 void YellowLaser::erase() {
     Terminal::log("erasing!");
     erased = true;
-    rendered = false;
+    rendered = true;
     // tile between 0 - 63 for drawing to BG
-    u8 bgx = asset.x & 0x3F;
-    for(int i = 0; i < asset.height; i++) {
+    u8 bgx = leftTile & 0x3F;
+    for(int i = 0; i < tileHeight; i++) {
         //use x to decide which sbb
-        int rowStartInd = 32*(asset.y + i) + /*start x*/(asset.x & 0x1F);
+        int rowStartInd = 32*(topTile + i) + /*start x*/(leftTile & 0x1F);
         
-        if(bgx < (31 - asset.width)) {
-            memset16(&se_mem[18][rowStartInd], 0, asset.width);
+        if(bgx < (31 - tileWidth)) {
+            memset16(&se_mem[18][rowStartInd], 0, tileWidth);
         } else if(bgx < 31) {
             memset16(
                 &se_mem[18][rowStartInd], 
@@ -121,11 +128,11 @@ void YellowLaser::erase() {
 
             memset16(&se_mem[19][rowStartInd + (32 - bgx)], 
                 0, 
-                asset.width - (31 - bgx)
+                tileWidth - (31 - bgx)
             );
 
-        } else if(bgx < (63 - asset.width)) { // fully in sbb 19
-            memset16(&se_mem[19][rowStartInd], 0, asset.width);
+        } else if(bgx < (63 - tileWidth)) { // fully in sbb 19
+            memset16(&se_mem[19][rowStartInd], 0, tileWidth);
         } else {
             memset16(
                 &se_mem[19][rowStartInd], 
@@ -135,7 +142,7 @@ void YellowLaser::erase() {
 
             memset16(&se_mem[18][rowStartInd + (64 - bgx)], 
                 0, 
-                asset.width - (63 - bgx)
+                tileWidth - (63 - bgx)
             );
         }
     }
@@ -157,30 +164,29 @@ void HazardManager::update(int scrollx, Rectangle playerbounds) {
 }
 
 void HazardManager::createTest() {
-    //hazards[hazardsCt++] = new YellowLaser(diag);
-    //hazards[hazardsCt++] = new Missile(miss);
-    hazards[hazardsCt++] = new RedLaser(redLaser);
-    //hazards[hazardsCt++] = new OrangeLaser(orangeLaser);
+    //hazards[hazardsCt++] = new YellowLaser(464, 24, 520, 72, (u16*)diagonal_laserMap);
+    hazards[hazardsCt++] = new Missile(60, 110, missileTiles);
+    //hazards[hazardsCt++] = new RedLaser(512, 0, 65);
+    //hazards[hazardsCt++] = new OrangeLaser(256,60,64,orange_64_laserTiles);
 }
 
 #define MISSILE_START_IND 3
 #define MISSILE_MAX_CT 8
 
 // Missile implementations
-Missile::Missile(hazardAsset ha) {
-    asset = ha;
-    hitbox = new Rectangle(ha.x * 8, ha.y * 8, ha.width, ha.height);
+Missile::Missile(int x, int y, const unsigned int* assetMap) {
+    hitbox = new Rectangle(x*8, y*8, 16, 8);
     rendered = false;
     erased = false;
 
     velocity = -16;
-    y = ha.y;
-    fixedX = ha.x << 7;
+    y = y;
+    fixedX = x << 7;
 
-    LZ77UnCompVram((u32*)ha.map, &tile_mem_obj[0][0xC0]);
+    LZ77UnCompVram((u32*)assetMap, &tile_mem_obj[0][0xC0]);
 
     obj = obj_set_attr(&obj_mem[MISSILE_START_IND],
-        ATTR0_BUILD(ha.y, 0, 0, 1, 0, 0, 0),
+        ATTR0_BUILD(y, 0, 0, 1, 0, 0, 0),
         ATTR1_BUILDR(0, 1, 0, 0),
         ATTR2_BUILD(0xC1, 0, 0)
     );
@@ -192,7 +198,7 @@ void Missile::update(int scrollx, Rectangle playerbounds){
     int newX = (fixedX - scrollx) >> 4;
     if(y != playerbounds.getTop()){
         s16 dy = clamp(playerbounds.getTop() - y, -1, 2);
-        //y += dy;
+        y += dy;
     }
 
     hitbox->setPos(fixedX>>4, y);
@@ -230,24 +236,23 @@ void Missile::erase() {
 #define O_LASER_START_IND 12
 
 // Missile implementations
-OrangeLaser::OrangeLaser(hazardAsset ha) {
-    asset = ha;
+OrangeLaser::OrangeLaser(int x, int y, int diameter, const unsigned int* assetMap) {
     //based on orientation, update pill location
-    int tempY = (ha.y + (ha.height/2));
-    hitbox = new Pill(ha.x+4, tempY, ha.x + ha.width - 4, tempY, 4);
+    int tempY = (y + (diameter/2));
+    hitbox = new Pill(x+4, tempY, x + diameter - 4, tempY, 4);
     rendered = false;
     erased = false;
 
     alpha = 1; //TODO calibrate  this
-    y = ha.y;
-    fixedX = ha.x << 4;
+    this->y = y;
+    fixedX = x << 4;
 
     int affInd = 3;
 
-    LZ77UnCompVram((u32*)ha.map, &tile_mem_obj[0][0xC5]);
+    LZ77UnCompVram((u32*)assetMap, &tile_mem_obj[0][0xC5]);
 
     obj = obj_set_attr(&obj_mem[O_LASER_START_IND],
-        ATTR0_BUILD(ha.y, 0, 0, 2, 0, 0, 0),
+        ATTR0_BUILD(y, 0, 0, 2, 0, 0, 0),
         ATTR1_BUILDA(0, 3, affInd),
         ATTR2_BUILD(0xC6, 0, 0)
     );
@@ -409,19 +414,31 @@ void updateLaser(int frame, u16 tileInd){
     loadLaserAnimation(redlaserAnimation[frame], tileInd);
 }
 
-RedLaser::RedLaser(hazardAsset ha) {
-    asset = ha;
-    tileInd = 65;
+/**
+ * @brief Construct a new Red Laser:: Red Laser object
+ * 
+ * @param x 
+ * @param yInd 0-6 for each of the potential red lasers
+ * @param ind 
+ */
+RedLaser::RedLaser(int x, int yInd, u16 ind) {
+    tileInd = ind;
     // calculate hitbox of where player will be when laser is activated
-    hitbox = new Pill(ha.x+(24*14)+53 /*just right of player*/, (ha.y * 16) + 32, ha.x+(24*21)+21 /*just left*/, (ha.y * 16) + 32, 4);
+    hitbox = new Pill(
+        x+(24*14)+53 /*just right of player*/, 
+        (y * 16) + 32, 
+        x+(24*21)+21 /*just left*/, 
+        (y * 16) + 32, 
+        4
+    );
     rendered = false;
     erased = false;
-    fixedX = ha.x<<4;
-    y = ha.y;
+    fixedX = x<<4;
+    y = yInd;
 
+    //every red laser will use the same tiles so this is fine hard-coded
     LZ77UnCompVram(redLaserTilesTiles, tileset);
-    buildLaser(y, tileInd);
-    
+    buildLaser(y, ind);
 }
 
 void RedLaser::update(int scrollX, Rectangle playerbounds) {

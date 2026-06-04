@@ -6,23 +6,6 @@
 #include "terminal.hpp"
 
 
-/// @brief hazardAsset
-/// idk, allows me to hardcode some values into digestible bits
-///
-/// @note the units for width, height, x, and y are non-specific, they could be FIXED, pixels, tiles, anything. be careful using them properly
-/// @param map const unsigned short*
-/// @param width u8
-/// @param height u8
-/// @param x u16
-/// @param y u16
-struct hazardAsset{
-    const unsigned short* map;
-    u8 width, height;
-    u16 x, y;
-};
-
-extern hazardAsset diag;
-
 //virtual class
 class Hazard {
     public:
@@ -35,17 +18,20 @@ class Hazard {
         virtual void erase() = 0;
 
         CollisionShape* hitbox;
-        hazardAsset asset;
         bool rendered, erased;
 };
 
 //inherited classes
 class YellowLaser : public Hazard {
     public:
-        YellowLaser(hazardAsset ha);
+        YellowLaser(int x1, int y1, int x2, int y2, u16* assetMap);
         void update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
+    private:
+        u16* map;
+        s16 tileWidth, tileHeight;
+        u16 topTile, leftTile;
 };
 
 //manager
@@ -60,10 +46,10 @@ class HazardManager{
         Hazard* hazards[8];
 };
 
-class OrangeLaser : public Hazard{
+class OrangeLaser : public Hazard {
     public:
         //probably doesnt need ha at all.
-        OrangeLaser(hazardAsset ha);
+        OrangeLaser(int x, int y, int diameter, const unsigned int* assetMap);
         void update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
@@ -78,7 +64,7 @@ class OrangeLaser : public Hazard{
 
 class RedLaser : public Hazard{
     public:
-        RedLaser(hazardAsset ha);
+        RedLaser(int x, int y, u16 tileInd);
         void update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
@@ -92,7 +78,7 @@ class RedLaser : public Hazard{
 class Missile : public Hazard{
     public:
         //probably doesnt need ha at all.
-        Missile(hazardAsset ha);
+        Missile(int x, int y, const unsigned int* assetMap);
         void update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
