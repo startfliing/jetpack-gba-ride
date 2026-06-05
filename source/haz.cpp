@@ -11,8 +11,8 @@ Hazard::~Hazard() {
     delete hitbox;
 }
 
-bool Hazard::checkCollision(const Rectangle playerBounds) {
-    return hitbox->collidesWithRectangle(playerBounds);
+u8 Hazard::checkCollision(const Rectangle playerBounds) {
+    return hitbox->collidesWithRectangle(playerBounds) ? hazardIndex : 0;
 }
 
 // YellowLaser implementations
@@ -32,6 +32,9 @@ YellowLaser::YellowLaser(int x1, int y1, int x2, int y2, u16* assetMap) {
     rendered = false;
     erased = false;
     map = assetMap;
+
+    //hazard index
+    hazardIndex = 1;
 
     //honestly don't know how this logic exactly works,
     //but when I moved away from HazardAsset, this was the
@@ -159,10 +162,10 @@ void HazardManager::update(int scrollx, PlayerCharacter* player) {
     }
 
     for(int i = 0; i < hazardsCt; i++) {
-        bool hit = hazards[i]->checkCollision(*player->getHitBox());
-        if(hit){
+        u8 hazardIndex = hazards[i]->checkCollision(*player->getHitBox());
+        if(hazardIndex){ //if hazardIndex isn't 0, player died
             //death initiate
-            player->dies();
+            player->dies(hazardIndex);
         };
     }
 }
@@ -182,9 +185,10 @@ Missile::Missile(int x, int y, const unsigned int* assetMap) {
     hitbox = new Rectangle(x*8, y*8, 16, 8);
     rendered = false;
     erased = false;
+    hazardIndex = 4;
 
     velocity = -16;
-    y = y;
+    fixedY = y << 4;
     fixedX = x << 7;
 
     LZ77UnCompVram((u32*)assetMap, &tile_mem_obj[0][0xC0]);
@@ -200,25 +204,20 @@ void Missile::update(int scrollx, Rectangle playerbounds){
     fixedX += velocity;
     // during warning phase, update y
     int newX = (fixedX - scrollx) >> 4;
-    if(y != playerbounds.getTop()){
-        s16 dy = clamp(playerbounds.getTop() - y, -1, 2);
-        y += dy;
+    int maxDY = 4;
+    if(fixedY>>4 != playerbounds.getTop()){
+        s16 dy = clamp(playerbounds.getTop() - (fixedY>>4), -1*maxDY, maxDY + 1);
+        fixedY += dy;
     }
 
-    hitbox->setPos(fixedX>>4, y);
-    obj_set_pos(obj, newX, y-2);
+    hitbox->setPos(fixedX>>4, fixedY>>4);
+    obj_set_pos(obj, newX, (fixedY>>4)-2);
 
     if(fixedX < scrollx + (32 << 7) && !rendered){
-        //Terminal::log("rendered");
         render();
     }
 
-    if(fixedX - scrollx > -100 && fixedX - scrollx < 100  ){
-        Terminal::log("<x, y> : <%%, %%>", (fixedX - scrollx)>>4, playerbounds.getTop() - y);
-    }
-
     if(fixedX < scrollx - (16 << 7)  && !erased){
-        //Terminal::log("erased");
         erase();
     }
 }
@@ -246,6 +245,7 @@ OrangeLaser::OrangeLaser(int x, int y, int diameter, const unsigned int* assetMa
     hitbox = new Pill(x+4, tempY, x + diameter - 4, tempY, 4);
     rendered = false;
     erased = false;
+    hazardIndex = 2;
 
     alpha = 1; //TODO calibrate  this
     this->y = y;
@@ -273,12 +273,10 @@ void OrangeLaser::update(int scrollx, Rectangle playerbounds){
     obj_aff_rotate(aff, alpha);
 
     if(fixedX < scrollx + (32 << 7) && !rendered){
-        //Terminal::log("<%%,%%>", lu_cos(0x4000), lu_sin(0x4000));
         render();
     }
 
     if(fixedX < scrollx - (16 << 7)  && !erased){
-        //Terminal::log("erased");
         erase();
     }
 }
@@ -397,12 +395,12 @@ void loadLaserAnimation(animationframe af, u16 tileInd){
     memcpy16(&tile_mem[1][tileInd+2], &tileset[af.tile2], sizeof(TILE)/2);
 }
 
-void buildLaser(int y, u16 tileInd){
+void buildLaser(int yIndex, u16 tileInd){
 
     loadLaserAnimation(redlaserAnimation[0], tileInd);
 
     SE* bg = se_mem[17];
-    int startInd = ((y*2)+3)*32;
+    int startInd = ((yIndex*2)+3)*32;
     for(int j = 0; j < 30; j++){//column
         u16 newSE = getNewSE(j,tileInd);
         //top tile
@@ -425,24 +423,25 @@ void updateLaser(int frame, u16 tileInd){
  * @param yInd 0-6 for each of the potential red lasers
  * @param ind 
  */
-RedLaser::RedLaser(int x, int yInd, u16 ind) {
+RedLaser::RedLaser(int x, int yIndex, u16 ind) {
     tileInd = ind;
     // calculate hitbox of where player will be when laser is activated
     hitbox = new Pill(
         x+(24*14)+53 /*just right of player*/, 
-        (y * 16) + 32, 
+        (yIndex * 16) + 32, 
         x+(24*21)+21 /*just left*/, 
-        (y * 16) + 32, 
+        (yIndex * 16) + 32, 
         4
     );
     rendered = false;
     erased = false;
+    hazardIndex = 3;
     fixedX = x<<4;
-    y = yInd;
+    yInd = yIndex;
 
     //every red laser will use the same tiles so this is fine hard-coded
     LZ77UnCompVram(redLaserTilesTiles, tileset);
-    buildLaser(y, ind);
+    buildLaser(yIndex, ind);
 }
 
 void RedLaser::update(int scrollX, Rectangle playerbounds) {

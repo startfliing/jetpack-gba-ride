@@ -11,7 +11,7 @@
 class Hazard {
     public:
         virtual ~Hazard();
-        bool checkCollision(const Rectangle playerBounds);
+        u8 checkCollision(const Rectangle playerBounds);
         virtual void update(int scrollx, Rectangle playerbounds) = 0;
 
     protected:
@@ -19,6 +19,7 @@ class Hazard {
         virtual void erase() = 0;
 
         CollisionShape* hitbox;
+        u8 hazardIndex;
         bool rendered, erased;
 };
 
@@ -73,7 +74,7 @@ class RedLaser : public Hazard{
     private:
         int fixedX;
         u16 tileInd;
-        u16 y; // 0 - 6 for laser index
+        u16 yInd; // 0 - 6 for laser index
 };
 
 class Missile : public Hazard{
@@ -87,7 +88,7 @@ class Missile : public Hazard{
     private:
         OBJ_ATTR* obj;
         int fixedX;
-        u16 y;
+        int fixedY;
         int velocity;
 };
 

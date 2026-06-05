@@ -6,6 +6,7 @@
 
 #include "player.h"
 #include "bullets.h"
+#include "playerDeaths.h"
 
 #define MAX_SY 104
 #define MIN_SY 4
@@ -171,8 +172,25 @@ class PlayerCharacter{
                 bullet_frame = clamp(bullet_frame + 1, 8, 11);
             }
 
+            curr_anim_tick++;
+            if(killedBy != 4){
+                
+                if(curr_anim_tick < 64){
+                    curr_frame = ((curr_anim_tick>>3) & 1) + 1;
+                }else{
+                    curr_frame = 3;
+                }
+
+            }else{
+                if(curr_anim_tick >= 24){
+                    curr_frame = 3;
+                }
+            }
+
+            
+
             if(temp_frame != curr_frame){
-                memcpy16(tile_mem_obj, &playerTiles[curr_frame * 128], sizeof(TILE)*8);
+                memcpy16(tile_mem_obj, &playerDeathsTiles[curr_frame * 128], sizeof(TILE)*8);
             }
 
             if(temp_bullet_frame != bullet_frame){
@@ -180,16 +198,20 @@ class PlayerCharacter{
             }
 
             x = (scrollX>>4) + 16;
-            obj_set_pos(&obj_mem[0], sx, sy);
-            hitbox->setPosition(x+9, sy+14);
+            obj_set_pos(&obj_mem[0], sx, sy+5);
+            hitbox->setPosition(x+9, sy+7);
         }
 
         Rectangle* getHitBox(){
             return hitbox;
         }
 
-        void dies(){
+        void dies(u8 hazardIndex){
             status = 0;
+            curr_frame = 0;
+            curr_anim_tick = 0;
+            killedBy = hazardIndex;
+            memcpy16(tile_mem_obj, &playerDeathsTiles[curr_frame * 128], sizeof(TILE)*8);
         };
 
         bool isDead(){
@@ -198,6 +220,10 @@ class PlayerCharacter{
 
         //status 0 = dead, 1 = alive
         int status;
+
+        //8-bit index for what killed barry
+        // 0 alive, 1 - yellow, 2 - orange, 3 - red, 4 - missile
+        u8 killedBy;
 
         //true position
         int x, y;
