@@ -141,14 +141,4 @@ public:
     void rotate(u16 alpha) override;
 };
 
-// ============================================================================
-// HELPER FUNCTION DECLARATIONS
-// ============================================================================
-
-Rectangle getPlayerRect(int playerX, int playerY);
-Circle getLaserCircle(int laserScreenX, int laserScreenY);
-Circle getHazardCircle(int hazardX, int hazardY, int radius);
-Pill getLaserPill(int startX, int startY, int endX, int endY, int radius);
-Pill getMovingPill(int centerX, int centerY, int dirX, int dirY, int length, int radius);
-
 #endif // COLLISION_HPP

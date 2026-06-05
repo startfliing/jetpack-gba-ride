@@ -16,14 +16,6 @@
 
 PlayerCharacter* playerChar = new PlayerCharacter();
 
-
-// HAZARDS
-/*  Hazards are the lasers and missiles that could end your run
-
-*/
-int hazardTimer = 0;
-
-
 int main(){
     //enable Border BG
     u8 cbb = 0;

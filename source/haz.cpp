@@ -5,6 +5,16 @@
 #include "orange_64_laser.h"
 #include "redLaserTiles.h"
 
+#define MISSILE_START_IND 3
+#define MISSILE_MAX_CT 8
+
+#define O_LASER_START_IND 12
+
+
+/*
+    HAZARD
+*/
+
 
 // Hazard implementations
 Hazard::~Hazard() {
@@ -15,18 +25,44 @@ u8 Hazard::checkCollision(const Rectangle playerBounds) {
     return hitbox->collidesWithRectangle(playerBounds) ? hazardIndex : 0;
 }
 
-// YellowLaser implementations
-/**
- * @brief Construct a new Yellow Laser:: Yellow Laser object
- * 
- * Plots both points of the laser included in the asset map.
- * 
- * @param x1 
- * @param y1 
- * @param x2 
- * @param y2 
- * @param assetMap 
- */
+
+/*
+    HAZARD MANAGER
+*/
+
+
+// HazardManager implementations
+HazardManager::HazardManager() {
+}
+
+void HazardManager::update(int scrollx, PlayerCharacter* player) {
+    
+    for(int i = 0; i < hazardsCt; i++) {
+        hazards[i]->update(scrollx, *player->getHitBox());
+    }
+
+    for(int i = 0; i < hazardsCt; i++) {
+        u8 hazardIndex = hazards[i]->checkCollision(*player->getHitBox());
+        if(hazardIndex){ //if hazardIndex isn't 0, player died
+            //death initiate
+            player->dies(hazardIndex);
+        };
+    }
+}
+
+void HazardManager::createTest() {
+    //hazards[hazardsCt++] = new YellowLaser(464, 24, 520, 72, (u16*)diagonal_laserMap);
+    hazards[hazardsCt++] = new Missile(60, 110, missileTiles);
+    hazards[hazardsCt++] = new RedLaser(512, 0, 65);
+    //hazards[hazardsCt++] = new OrangeLaser(256,60,64,orange_64_laserTiles);
+}
+
+
+/*
+    YELLOW LASER
+*/
+
+
 YellowLaser::YellowLaser(int x1, int y1, int x2, int y2, u16* assetMap) {
     hitbox = new Pill(x1, y1, x2, y2, 4);
     rendered = false;
@@ -58,7 +94,6 @@ YellowLaser::YellowLaser(int x1, int y1, int x2, int y2, u16* assetMap) {
     }
     topTile--;
     tileHeight += 2;
-    Terminal::log("TL : <%%,%%> WH <%%,%%>",topTile, leftTile, tileWidth, tileHeight);
 }
 
 void YellowLaser::update(int scrollX, Rectangle playerbounds) {
@@ -71,7 +106,6 @@ void YellowLaser::update(int scrollX, Rectangle playerbounds) {
 }
 
 void YellowLaser::render() {
-    Terminal::log("rendering!");
     rendered = true;
     erased = false;
     // tile between 0 - 63 for drawing to BG
@@ -111,7 +145,6 @@ void YellowLaser::render() {
 }
 
 void YellowLaser::erase() {
-    Terminal::log("erasing!");
     erased = true;
     rendered = true;
     // tile between 0 - 63 for drawing to BG
@@ -151,92 +184,11 @@ void YellowLaser::erase() {
     }
 }
 
-// HazardManager implementations
-HazardManager::HazardManager() {
-}
 
-void HazardManager::update(int scrollx, PlayerCharacter* player) {
-    
-    for(int i = 0; i < hazardsCt; i++) {
-        hazards[i]->update(scrollx, *player->getHitBox());
-    }
+/*
+    ORANGE LASER
+*/
 
-    for(int i = 0; i < hazardsCt; i++) {
-        u8 hazardIndex = hazards[i]->checkCollision(*player->getHitBox());
-        if(hazardIndex){ //if hazardIndex isn't 0, player died
-            //death initiate
-            player->dies(hazardIndex);
-        };
-    }
-}
-
-void HazardManager::createTest() {
-    //hazards[hazardsCt++] = new YellowLaser(464, 24, 520, 72, (u16*)diagonal_laserMap);
-    hazards[hazardsCt++] = new Missile(60, 110, missileTiles);
-    //hazards[hazardsCt++] = new RedLaser(512, 0, 65);
-    //hazards[hazardsCt++] = new OrangeLaser(256,60,64,orange_64_laserTiles);
-}
-
-#define MISSILE_START_IND 3
-#define MISSILE_MAX_CT 8
-
-// Missile implementations
-Missile::Missile(int x, int y, const unsigned int* assetMap) {
-    hitbox = new Rectangle(x*8, y*8, 16, 8);
-    rendered = false;
-    erased = false;
-    hazardIndex = 4;
-
-    velocity = -16;
-    fixedY = y << 4;
-    fixedX = x << 7;
-
-    LZ77UnCompVram((u32*)assetMap, &tile_mem_obj[0][0xC0]);
-
-    obj = obj_set_attr(&obj_mem[MISSILE_START_IND],
-        ATTR0_BUILD(y, 0, 0, 1, 0, 0, 0),
-        ATTR1_BUILDR(0, 1, 0, 0),
-        ATTR2_BUILD(0xC1, 0, 0)
-    );
-}
-
-void Missile::update(int scrollx, Rectangle playerbounds){
-    fixedX += velocity;
-    // during warning phase, update y
-    int newX = (fixedX - scrollx) >> 4;
-    int maxDY = 4;
-    if(fixedY>>4 != playerbounds.getTop()){
-        s16 dy = clamp(playerbounds.getTop() - (fixedY>>4), -1*maxDY, maxDY + 1);
-        fixedY += dy;
-    }
-
-    hitbox->setPos(fixedX>>4, fixedY>>4);
-    obj_set_pos(obj, newX, (fixedY>>4)-2);
-
-    if(fixedX < scrollx + (32 << 7) && !rendered){
-        render();
-    }
-
-    if(fixedX < scrollx - (16 << 7)  && !erased){
-        erase();
-    }
-}
-
-void Missile::render() {
-    rendered = true;
-    erased = false;
-    // tile between 0 - 63 for drawing to BG
-    obj_unhide(obj, 0);
-}
-
-void Missile::erase() {
-    erased = true;
-    rendered = false;
-    // tile between 0 - 63 for drawing to BG
-    obj_hide(obj);
-}
-
-#define O_LASER_START_IND 12
 
 // Missile implementations
 OrangeLaser::OrangeLaser(int x, int y, int diameter, const unsigned int* assetMap) {
@@ -295,8 +247,13 @@ void OrangeLaser::erase() {
     obj_hide(obj);
 }
 
-// RedLaser implementations
-// tile start bg_mem[cbb+1][64]
+
+
+/*
+    RED LASER
+*/
+
+
 
 u16 getNewSE(int column, u16 tileInd){
     u16 returnSE = 0;
@@ -416,13 +373,6 @@ void updateLaser(int frame, u16 tileInd){
     loadLaserAnimation(redlaserAnimation[frame], tileInd);
 }
 
-/**
- * @brief Construct a new Red Laser:: Red Laser object
- * 
- * @param x 
- * @param yInd 0-6 for each of the potential red lasers
- * @param ind 
- */
 RedLaser::RedLaser(int x, int yIndex, u16 ind) {
     tileInd = ind;
     // calculate hitbox of where player will be when laser is activated
@@ -462,4 +412,66 @@ void RedLaser::render() {
 void RedLaser::erase() {
     erased = true;
     rendered = false;
+}
+
+
+/*
+    MISSILE
+*/
+
+
+// Missile implementations
+Missile::Missile(int x, int y, const unsigned int* assetMap) {
+    hitbox = new Rectangle(x*8, y*8, 16, 8);
+    rendered = false;
+    erased = false;
+    hazardIndex = 4;
+
+    velocity = -16;
+    fixedY = y << 4;
+    fixedX = x << 7;
+
+    LZ77UnCompVram((u32*)assetMap, &tile_mem_obj[0][0xC0]);
+
+    obj = obj_set_attr(&obj_mem[MISSILE_START_IND],
+        ATTR0_BUILD(y, 0, 0, 1, 0, 0, 0),
+        ATTR1_BUILDR(0, 1, 0, 0),
+        ATTR2_BUILD(0xC1, 0, 0)
+    );
+}
+
+void Missile::update(int scrollx, Rectangle playerbounds){
+    fixedX += velocity;
+    // during warning phase, update y
+    int newX = (fixedX - scrollx) >> 4;
+    int maxDY = 4;
+    if(fixedY>>4 != playerbounds.getTop()){
+        s16 dy = clamp(playerbounds.getTop() - (fixedY>>4), -1*maxDY, maxDY + 1);
+        fixedY += dy;
+    }
+
+    hitbox->setPos(fixedX>>4, fixedY>>4);
+    obj_set_pos(obj, newX, (fixedY>>4)-2);
+
+    if(fixedX < scrollx + (32 << 7) && !rendered){
+        render();
+    }
+
+    if(fixedX < scrollx - (16 << 7)  && !erased){
+        erase();
+    }
+}
+
+void Missile::render() {
+    rendered = true;
+    erased = false;
+    // tile between 0 - 63 for drawing to BG
+    obj_unhide(obj, 0);
+}
+
+void Missile::erase() {
+    erased = true;
+    rendered = false;
+    // tile between 0 - 63 for drawing to BG
+    obj_hide(obj);
 }

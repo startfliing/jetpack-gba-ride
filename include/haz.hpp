@@ -23,6 +23,18 @@ class Hazard {
         bool rendered, erased;
 };
 
+//manager
+class HazardManager{
+    public:
+        HazardManager();
+        void update(int scrollx, PlayerCharacter* player);
+        void createTest();
+
+    private:
+        int hazardsCt;
+        Hazard* hazards[8];
+};
+
 //inherited classes
 class YellowLaser : public Hazard {
     public:
@@ -34,18 +46,6 @@ class YellowLaser : public Hazard {
         u16* map;
         s16 tileWidth, tileHeight;
         u16 topTile, leftTile;
-};
-
-//manager
-class HazardManager{
-    public:
-        HazardManager();
-        void update(int scrollx, PlayerCharacter* player);
-        void createTest();
-
-    private:
-        int hazardsCt;
-        Hazard* hazards[8];
 };
 
 class OrangeLaser : public Hazard {
