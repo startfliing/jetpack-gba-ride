@@ -73,6 +73,9 @@ int main(){
             speed = clamp(speed - 1, 0, INT16_MAX);
         }
 
+        if(speed == 0 && key_hit(KEY_START)){
+            return 0;
+        }
         //update random nunmber
         qran();
 
