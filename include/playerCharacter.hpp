@@ -46,10 +46,11 @@ class PlayerCharacter{
             memcpy16(tile_mem_obj, playerTiles, playerTilesLen/10);
             LZ77UnCompVram(playerPal, pal_obj_mem);
             obj_set_attr(&obj_mem[0],
-                ATTR0_BUILD(sy, 0, 0, 0, 0, 0 ,0),
-                ATTR1_BUILDR(sx, 2, 0, 0),
+                ATTR0_BUILD(sy, 0, 0, 1, 0, 0 ,0),
+                ATTR1_BUILDA(sx, 2, 0),
                 ATTR2_BUILD(1, 0, 0)
             );
+            obj_aff_identity(&obj_aff_mem[0]);
 
             //bullets
             memcpy16(&tile_mem_obj[0][128], bulletsTiles, bulletsTilesLen/24);
@@ -154,11 +155,22 @@ class PlayerCharacter{
                 vy = (vy * -1) * 0.60;
                 y *= -1;
                 if(vy > 0x30 /*arbitrary height*/){
-                    //update character frame
+                    //update character theta
+                    theta = qran();
+                }else{
+                    //set faceplant sprite
+                    //set theta to facedown
+                    theta = 0xDFFF;
                 }
             }
             // update true position and screen position
             y = clamp(y, MIN_Y, MAX_Y+1);
+
+            if(y > MIN_Y+15){
+                theta -= clamp(0xA0, 0, speed<<3);
+            }
+
+
             sy = clamp(MAX_SY - (y>>5), MIN_SY, MAX_SY+1);
 
             if(y == MIN_Y || y == MAX_Y) vy = 0;
@@ -173,7 +185,7 @@ class PlayerCharacter{
             }
 
             curr_anim_tick++;
-            if(killedBy != 4){
+            if(killedBy != 4 && speed > 0){
                 
                 if(curr_anim_tick < 64){
                     curr_frame = ((curr_anim_tick>>3) & 1) + 1;
@@ -199,6 +211,7 @@ class PlayerCharacter{
 
             x = (scrollX>>4) + 16;
             obj_set_pos(&obj_mem[0], sx, sy+5);
+            obj_aff_rotate(&obj_aff_mem[0], theta);
             hitbox->setPosition(x+9, sy+7);
         }
 
@@ -233,6 +246,9 @@ class PlayerCharacter{
 
         //velocity and acceleration
         FIXED vy, ay;
+
+        // theta for spinning barry while he dies
+        u16 theta;
 
         // anim tick for updating per frame, anim_speed for ticks to update sprite, curr_frame 
         u8 curr_anim_tick, anim_speed, curr_frame;
