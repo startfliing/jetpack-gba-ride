@@ -52,8 +52,8 @@ void HazardManager::update(int scrollx, PlayerCharacter* player) {
 
 void HazardManager::createTest() {
     //hazards[hazardsCt++] = new YellowLaser(464, 24, 520, 72, (u16*)diagonal_laserMap);
-    hazards[hazardsCt++] = new Missile(60, 110, missileTiles);
-    hazards[hazardsCt++] = new RedLaser(512, 0, 65);
+    hazards[hazardsCt++] = new Missile(1024, 110, missileTiles);
+    //hazards[hazardsCt++] = new RedLaser(256, 0, 65);
     //hazards[hazardsCt++] = new OrangeLaser(256,60,64,orange_64_laserTiles);
 }
 
@@ -422,19 +422,19 @@ void RedLaser::erase() {
 
 // Missile implementations
 Missile::Missile(int x, int y, const unsigned int* assetMap) {
-    hitbox = new Rectangle(x*8, y*8, 16, 8);
+    hitbox = new Rectangle(x, y, 9, 6);
     rendered = false;
     erased = false;
     hazardIndex = 4;
 
     velocity = -16;
     fixedY = y << 4;
-    fixedX = x << 7;
+    fixedX = x << 4;
 
     LZ77UnCompVram((u32*)assetMap, &tile_mem_obj[0][0xC0]);
 
     obj = obj_set_attr(&obj_mem[MISSILE_START_IND],
-        ATTR0_BUILD(y, 0, 0, 1, 0, 0, 0),
+        ATTR0_BUILD(y, 0, 0, 2, 0, 0, 0),
         ATTR1_BUILDR(0, 1, 0, 0),
         ATTR2_BUILD(0xC1, 0, 0)
     );
@@ -444,29 +444,61 @@ void Missile::update(int scrollx, Rectangle playerbounds){
     fixedX += velocity;
     // during warning phase, update y
     int newX = (fixedX - scrollx) >> 4;
-    int maxDY = 4;
-    if(fixedY>>4 != playerbounds.getTop()){
-        s16 dy = clamp(playerbounds.getTop() - (fixedY>>4), -1*maxDY, maxDY + 1);
-        fixedY += dy;
+
+    int frame = newX>>4;
+    int frameInd = 0;
+    int framePal = 0;
+
+    if(scrollx < fixedX - (96 << 7)){ // pre warning
+        hitbox->setPos(fixedX>>4, fixedY>>4);
+        obj_set_pos(obj, newX, (fixedY>>4));
+        return;
+    }else if(scrollx < fixedX - (64 << 7)){ // initiate warning indicator
+        //enable warning
+        obj_unhide(obj, ATTR0_REG);
+        frameInd = ((frame & 1)+1)*4;
+        framePal = (frame % 3)+1;
+
+        int maxDY = 8;
+        if(fixedY>>4 != playerbounds.getTop()){
+            s16 dy = clamp(playerbounds.getTop() - (fixedY>>4), -1*maxDY, maxDY + 1);
+            fixedY += dy;
+        }
+
+        newX = 224;
+    }else if(scrollx < fixedX - (48 << 7)){ // shocked indicator
+
+        frameInd = 12;
+        framePal = (frame % 3)+1;
+
+        newX = 224;
+    }else if(scrollx < fixedX + (16<<7) ){ // remove indicator, render missile
+        obj_hide(obj);
+
+        BFN_SET(obj->attr2, frameInd + 0xC1, ATTR2_ID);
+        BFN_SET(obj->attr2, framePal, ATTR2_PALBANK);
+        hitbox->setPos(fixedX>>4, (fixedY>>4)+5);
+        obj_set_pos(obj, newX, (fixedY>>4));
+
+        render();
+        return;
+    }else{ // remove missile
+        erase();
+        return;
     }
+
+    BFN_SET(obj->attr2, frameInd + 0xC1, ATTR2_ID);
+    BFN_SET(obj->attr2, framePal, ATTR2_PALBANK);
 
     hitbox->setPos(fixedX>>4, fixedY>>4);
-    obj_set_pos(obj, newX, (fixedY>>4)-2);
-
-    if(fixedX < scrollx + (32 << 7) && !rendered){
-        render();
-    }
-
-    if(fixedX < scrollx - (16 << 7)  && !erased){
-        erase();
-    }
+    obj_set_pos(obj, newX, (fixedY>>4)+2);
 }
 
 void Missile::render() {
     rendered = true;
     erased = false;
     // tile between 0 - 63 for drawing to BG
-    obj_unhide(obj, 0);
+    obj_unhide(obj, ATTR0_REG);
 }
 
 void Missile::erase() {
