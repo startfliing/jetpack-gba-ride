@@ -18,26 +18,31 @@ class BackgroundManager{
             current_screenblock = -1;
             sbb = sb;
             cbb = cb;
-            be = entries[2];
+            be = entries[3];
+            current_background_duration = 1;
         };
 
         void init(){
             LZ77UnCompVram(tilesetPal, pal_bg_mem);
             LZ77UnCompVram(tilesetTiles, tile_mem[cbb]);
-            //memcpy16(&se_mem[sbb], zone1Map, zone1MapLen/2);
+            memcpy16(&se_mem[sbb], be.map[0], sizeof(SCREENBLOCK)/2);
         };
 
-        void update(int scrollX){ //>>4 to get pixels >>3 more to get tiles >>5 to get whole screen Blocks
-            int playerSB = (scrollX - (16<<4))>>12;
+        void update(int scrollX){ 
+            //find the sb 16 pixels behind the player a.k.a the one the player is in
+            int playerSB = (scrollX - (16<<4))>>12; //>>4 to get pixels >>3 more to get tiles >>5 to get whole screen Blocks
             
             if(playerSB != current_screenblock){ //transition time
-                
-                memcpy16(se_mem[sbb + 1 - (playerSB & 1)], be.map[current_background_duration], sizeof(SCREENBLOCK)/2);
-                current_background_duration++;
+
                 if(current_background_duration == be.duration){
-                    be = entries[playerSB & 1];
+                    be = entries[playerSB & 1]; //entry 0 or 1
                     current_background_duration = 0;
                 }
+                // sbb + 1 - (playerSB & 1)
+                // 
+                memcpy16(se_mem[sbb + 1 - (playerSB & 1)], be.map[current_background_duration], sizeof(SCREENBLOCK)/2);
+                //Time to Select a new background
+                current_background_duration++;
                 current_screenblock = playerSB;
             }
 

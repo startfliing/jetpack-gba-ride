@@ -26,7 +26,6 @@ int main(){
 
     // background
     bm->init();
-    memcpy16(&se_mem[sbb], zone1Map, zone1MapLen/2);
 
     //yellow lasers
     REG_BG2CNT = BG_BUILD(cbb+1, sbb+2, 1, 0, 0, 0, 0);
