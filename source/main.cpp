@@ -55,7 +55,7 @@ int main(){
 
     int speed = 256;
 
-    FIXED scrollx = 0;
+    FIXED scrollx = (-32)<<4;
     while(1){
 
         if(key_hit(KEY_START)){
@@ -65,8 +65,10 @@ int main(){
         scrollx += speed>>3;
         playerChar->update(scrollx, speed);
         hm->update(scrollx, playerChar);
-        REG_BG0HOFS = scrollx>>4;
-        REG_BG2HOFS = scrollx>>4;
+        if( scrollx>>4 > 16 ){ //if during startup
+            REG_BG0HOFS = (scrollx>>4)-16;
+            REG_BG2HOFS = (scrollx>>4)-16;
+        }
 
         if(playerChar->isDead()){
             //we can animate here

@@ -29,7 +29,7 @@ class PlayerCharacter{
             sy = MAX_SY;
             ay = 0;
             vy = 0;
-            status = 1;
+            status = 2;
             curr_anim_tick = 0;  
             anim_speed = 6;  
             curr_frame = 0;  
@@ -69,6 +69,9 @@ class PlayerCharacter{
                     break;
                 case 1: //alive
                     updateAlive(scrollX);
+                    break;
+                case 2: //entering the level
+                    updateEntering(scrollX);
                     break;
                 default:
                     break;
@@ -213,6 +216,26 @@ class PlayerCharacter{
             obj_set_pos(&obj_mem[0], sx, sy+5);
             obj_aff_rotate(&obj_aff_mem[0], theta);
             hitbox->setPosition(x+9, sy+7);
+        }
+
+        void updateEntering(int scrollX){
+            x = scrollX>>4;
+
+            u8 temp_frame = curr_frame;
+            curr_anim_tick++;
+
+            if(curr_anim_tick > anim_speed){
+                curr_anim_tick = 0;
+                curr_frame = wrap(curr_frame + 1, 0, 4);
+            }
+
+            if(temp_frame != curr_frame){
+                memcpy16(tile_mem_obj, &playerTiles[curr_frame * 128], sizeof(TILE)*8);
+            }
+
+            obj_set_pos(&obj_mem[0], x, sy);
+            hitbox->setPosition(x+9, sy+14);
+            if(x == 16/* */) status = 1; //transition to updateAlive
         }
 
         Rectangle* getHitBox(){
