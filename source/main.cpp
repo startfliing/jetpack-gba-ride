@@ -9,22 +9,23 @@
 #include "hazards.h"
 
 #include "playerCharacter.hpp"
+#include "background.hpp"
 
 #include "soundbank.h"
 #include "soundbank_bin.h"
 
 
 PlayerCharacter* playerChar = new PlayerCharacter();
+BackgroundManager* bm = new BackgroundManager(16, 0);
 
 int main(){
     //enable Border BG
     u8 cbb = 0;
     u8 sbb = 16;
-    REG_BG0CNT = BG_BUILD(cbb, sbb, 0, 0, 1, 0, 0);
+    REG_BG0CNT = BG_BUILD(cbb, sbb, 1, 0, 1, 0, 0);
 
     // background
-    LZ77UnCompVram(tilesetPal, pal_bg_mem);
-    LZ77UnCompVram(tilesetTiles, tile_mem[cbb]);
+    bm->init();
     memcpy16(&se_mem[sbb], zone1Map, zone1MapLen/2);
 
     //yellow lasers
@@ -32,7 +33,7 @@ int main(){
     LZ77UnCompVram(hazardsTiles, tile_mem[cbb+1]);
 
     //red lasers
-    REG_BG3CNT = BG_BUILD(cbb+1, sbb+1, 0, 0, 0, 0, 0);
+    REG_BG3CNT = BG_BUILD(cbb+1, sbb+4, 0, 0, 0, 0, 0);
     
     oam_init(obj_mem, 128);
 
@@ -64,6 +65,7 @@ int main(){
 
         scrollx += speed>>3;
         playerChar->update(scrollx, speed);
+        bm->update(scrollx);
         hm->update(scrollx, playerChar);
         if( scrollx>>4 > 16 ){ //if during startup
             REG_BG0HOFS = (scrollx>>4)-16;

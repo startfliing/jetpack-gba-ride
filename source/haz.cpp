@@ -356,7 +356,7 @@ void buildLaser(int yIndex, u16 tileInd){
 
     loadLaserAnimation(redlaserAnimation[0], tileInd);
 
-    SE* bg = se_mem[17];
+    SE* bg = se_mem[20];
     int startInd = ((yIndex*2)+3)*32;
     for(int j = 0; j < 30; j++){//column
         u16 newSE = getNewSE(j,tileInd);
