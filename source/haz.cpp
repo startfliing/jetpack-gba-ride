@@ -166,34 +166,40 @@ void YellowLaser::erase() {
     u8 bgx = leftTile & 0x3F;
     for(int i = 0; i < tileHeight; i++) {
         //use x to decide which sbb
-        int rowStartInd = 32*(topTile + i) + /*start x*/(leftTile & 0x1F);
+        int rowStartInd = 32*(topTile + i);
         
         if(bgx < (31 - tileWidth)) {
-            memset16(&se_mem[18][rowStartInd], 0, tileWidth);
-        } else if(bgx < 31) {
+            memset16(&se_mem[18][rowStartInd + (leftTile & 0x1F)], 0, tileWidth);
+        } else if(bgx < 32) {
+            int SB18TileCt = 32 - (leftTile & 0x1F);
+            int SB19TileCt = tileWidth-SB18TileCt;
             memset16(
-                &se_mem[18][rowStartInd], 
+                &se_mem[18][rowStartInd + (leftTile & 0x1F)], 
                 0, 
-                31 - bgx
+                SB18TileCt
             );
 
-            memset16(&se_mem[19][rowStartInd + (32 - bgx)], 
+            //copy
+            memset16(&se_mem[19][rowStartInd], 
                 0, 
-                tileWidth - (31 - bgx)
+                SB19TileCt
             );
 
         } else if(bgx < (63 - tileWidth)) { // fully in sbb 19
-            memset16(&se_mem[19][rowStartInd], 0, tileWidth);
+            memset16(&se_mem[19][rowStartInd+(leftTile & 0x1F)], 0, tileWidth);
         } else {
+            int SB19TileCt = 32 - (leftTile & 0x1F);
+            int SB18TileCt = tileWidth-SB19TileCt;
+
             memset16(
-                &se_mem[19][rowStartInd], 
+                &se_mem[19][rowStartInd + (leftTile & 0x1F)], 
                 0, 
-                64 - bgx
+                SB19TileCt
             );
 
-            memset16(&se_mem[18][rowStartInd + (64 - bgx)], 
+            memset16(&se_mem[18][rowStartInd], 
                 0, 
-                tileWidth - (63 - bgx)
+                SB18TileCt
             );
         }
     }
