@@ -140,7 +140,7 @@ class PlayerCharacter{
                 memcpy16(&tile_mem_obj[0][128], &bulletsTiles[bullet_frame * 8 * 64], sizeof(TILE)*32);
             }
 
-            x = (scrollX>>4) + 16;
+            x = (scrollX>>4);
             obj_set_pos(&obj_mem[0], sx, sy);
             hitbox->setPosition(x+9, sy+14);
         }
@@ -212,7 +212,7 @@ class PlayerCharacter{
                 memcpy16(&tile_mem_obj[0][128], &bulletsTiles[bullet_frame * 8 * 64], sizeof(TILE)*32);
             }
 
-            x = (scrollX>>4) + 16;
+            x = (scrollX>>4);
             obj_set_pos(&obj_mem[0], sx, sy+5);
             obj_aff_rotate(&obj_aff_mem[0], theta);
             hitbox->setPosition(x+9, sy+7);
