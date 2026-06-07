@@ -55,6 +55,9 @@ int main(){
 
     int speed = 256;
 
+    REG_BG0HOFS = 0;
+    REG_BG2HOFS = 0;
+
     FIXED scrollx = (-32)<<4;
     while(1){
 
@@ -86,6 +89,6 @@ int main(){
         key_poll();
 
         //helps with visual tearing
-        vid_vsync();
+        VBlankIntrWait();
     }
 }
