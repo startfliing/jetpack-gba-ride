@@ -445,7 +445,7 @@ void RedLaser::erase() {
 
 
 // Missile implementations
-Missile::Missile(int x, int y, const unsigned int* assetMap) {
+Missile::Missile(int x, int y) {
     hitbox = new Rectangle(x, y, 9, 6);
     rendered = false;
     erased = false;
@@ -455,7 +455,7 @@ Missile::Missile(int x, int y, const unsigned int* assetMap) {
     fixedY = y << 4;
     fixedX = x << 4;
 
-    LZ77UnCompVram((u32*)assetMap, &tile_mem_obj[0][0xC0]);
+    LZ77UnCompVram(missileTiles, &tile_mem_obj[0][0xC0]);
 
     obj = obj_set_attr(&obj_mem[MISSILE_START_IND],
         ATTR0_BUILD(y, 0, 0, 2, 0, 0, 0),

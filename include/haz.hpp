@@ -89,7 +89,7 @@ class RedLaser : public Hazard{
 class Missile : public Hazard{
     public:
         //probably doesnt need ha at all.
-        Missile(int x, int y, const unsigned int* assetMap);
+        Missile(int x, int y);
         HAZARD_STATUS update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
