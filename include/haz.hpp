@@ -35,16 +35,22 @@ class HazardManager{
         Hazard* hazards[8];
 };
 
+struct yellowLaserAsset{
+    u16* map;
+    u16 width, height;
+    u16 xOffset, yOffset;
+};
+
 //inherited classes
 class YellowLaser : public Hazard {
     public:
-        YellowLaser(int x1, int y1, int x2, int y2, u16* assetMap);
+        YellowLaser(int x1, int y1, yellowLaserAsset yla);
         void update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
     private:
         u16* map;
-        s16 tileWidth, tileHeight;
+        u16 tileWidth, tileHeight;
         u16 topTile, leftTile;
 };
 

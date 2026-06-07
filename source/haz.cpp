@@ -50,6 +50,10 @@ void HazardManager::update(int scrollx, PlayerCharacter* player) {
     }
 }
 
+yellowLaserAsset diagonal = {
+    (u16*)diagonal_laserMap, 64, 64, 8, 8
+};
+
 void HazardManager::createTest() {
     //hazards[hazardsCt++] = new YellowLaser(464, 24, 520, 72, (u16*)diagonal_laserMap);
     hazards[hazardsCt++] = new Missile(1024, 110, missileTiles);
@@ -63,37 +67,20 @@ void HazardManager::createTest() {
 */
 
 
-YellowLaser::YellowLaser(int x1, int y1, int x2, int y2, u16* assetMap) {
-    hitbox = new Pill(x1, y1, x2, y2, 4);
+YellowLaser::YellowLaser(int x1, int y1, yellowLaserAsset yla) {
+    hitbox = new Pill(x1+yla.xOffset, y1+yla.yOffset, x1+yla.width-yla.xOffset, y1+yla.height-yla.yOffset, 4);
     rendered = false;
     erased = false;
-    map = assetMap;
+    map = yla.map;
 
     //hazard index
     hazardIndex = 1;
 
-    //honestly don't know how this logic exactly works,
-    //but when I moved away from HazardAsset, this was the
-    //solution and there were some rendering issues.
-
-    tileWidth = (x2>>3) - (x1>>3);
+    tileWidth = yla.width>>3;
     leftTile = x1>>3;
-    //if width is negative, x2 is left of x1
-    if(tileWidth < 0){
-        leftTile = x2>>3;
-        tileWidth *= -1;
-    }
-    tileWidth++;
 
-    tileHeight = (y2>>3) - (y1>>3);
+    tileHeight = yla.height>>3;
     topTile = y1>>3;
-    //if width is negative, x2 is left of x1
-    if(tileHeight < 0){
-        topTile = y2>>3;
-        tileHeight *= -1;
-    }
-    topTile--;
-    tileHeight += 2;
 }
 
 void YellowLaser::update(int scrollX, Rectangle playerbounds) {
@@ -110,35 +97,43 @@ void YellowLaser::render() {
     erased = false;
     // tile between 0 - 63 for drawing to BG
     u8 bgx = leftTile & 0x3F;
-    for(int i = 0; i < tileHeight; i++) {
+    for(int i = 0; i < tileHeight; i++) { //iterate through each row of map
         //use x to decide which sbb
-        int rowStartInd = 32*(topTile + i) + /*start x*/(leftTile & 0x1F);
+        int rowStartInd = 32*(topTile + i);
         
         if(bgx < (31 - tileWidth)) {
-            memcpy16(&se_mem[18][rowStartInd], &map[tileWidth * i], tileWidth);
-        } else if(bgx < 31) {
+            memcpy16(&se_mem[18][rowStartInd + (leftTile & 0x1F)], &map[tileWidth * i], tileWidth);
+        } else if(bgx < 32) {
+            // copy sbTileWidth /*32*/ - (leftTile & 0x1F)
+            //how many tiles on SB 18 and SB 19
+            int SB18TileCt = 32 - (leftTile & 0x1F);
+            int SB19TileCt = tileWidth-SB18TileCt;
             memcpy16(
-                &se_mem[18][rowStartInd], 
+                &se_mem[18][rowStartInd + (leftTile & 0x1F)], 
                 &map[tileWidth * i], 
-                32 - bgx
+                SB18TileCt
             );
 
-            memcpy16(&se_mem[19][rowStartInd + (32 - bgx)], 
-                &map[(tileWidth * i) + (31 - bgx)], 
-                tileWidth - (31 - bgx)
+            //copy
+            memcpy16(&se_mem[19][rowStartInd], 
+                &map[(tileWidth * i) + SB18TileCt], 
+                SB19TileCt
             );
         } else if(bgx < (63 - tileWidth)) { // fully in sbb 19
-            memcpy16(&se_mem[19][rowStartInd], &map[tileWidth * i], tileWidth);
+            memcpy16(&se_mem[19][rowStartInd+(leftTile & 0x1F)], &map[tileWidth * i], tileWidth);
         } else {
+            int SB19TileCt = 32 - (leftTile & 0x1F);
+            int SB18TileCt = tileWidth-SB19TileCt;
+
             memcpy16(
-                &se_mem[19][rowStartInd], 
+                &se_mem[19][rowStartInd + (leftTile & 0x1F)], 
                 &map[tileWidth * i], 
-                64 - bgx
+                SB19TileCt
             );
 
-            memcpy16(&se_mem[18][rowStartInd + (64 - bgx)], 
-                &map[(tileWidth * i) + (63 - bgx)], 
-                tileWidth - (63 - bgx)
+            memcpy16(&se_mem[18][rowStartInd], 
+                &map[(tileWidth * i) + (SB19TileCt)], 
+                SB18TileCt
             );
         }
     }
