@@ -5,14 +5,16 @@
 #include "collision.hpp"
 #include "terminal.hpp"
 #include "playerCharacter.hpp"
+#include "ii.hpp"
 
+enum HAZARD_STATUS{PERSIST, DELETE};
 
 //virtual class
 class Hazard {
     public:
         virtual ~Hazard();
         u8 checkCollision(const Rectangle playerBounds);
-        virtual void update(int scrollx, Rectangle playerbounds) = 0;
+        virtual HAZARD_STATUS update(int scrollx, Rectangle playerbounds) = 0;
 
     protected:
         virtual void render() = 0;
@@ -32,6 +34,7 @@ class HazardManager{
 
     private:
         int hazardsCt;
+        II<8>* ii;
         Hazard* hazards[8];
 };
 
@@ -45,7 +48,7 @@ struct yellowLaserAsset{
 class YellowLaser : public Hazard {
     public:
         YellowLaser(int x1, int y1, yellowLaserAsset yla);
-        void update(int scrollX, Rectangle playerbounds);
+        HAZARD_STATUS update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
     private:
@@ -58,7 +61,7 @@ class OrangeLaser : public Hazard {
     public:
         //probably doesnt need ha at all.
         OrangeLaser(int x, int y, int diameter, const unsigned int* assetMap);
-        void update(int scrollX, Rectangle playerbounds);
+        HAZARD_STATUS update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
 
@@ -73,7 +76,7 @@ class OrangeLaser : public Hazard {
 class RedLaser : public Hazard{
     public:
         RedLaser(int x, int y, u16 tileInd);
-        void update(int scrollX, Rectangle playerbounds);
+        HAZARD_STATUS update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
 
@@ -87,7 +90,7 @@ class Missile : public Hazard{
     public:
         //probably doesnt need ha at all.
         Missile(int x, int y, const unsigned int* assetMap);
-        void update(int scrollX, Rectangle playerbounds);
+        HAZARD_STATUS update(int scrollX, Rectangle playerbounds);
         void render();
         void erase();
 

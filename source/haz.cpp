@@ -33,20 +33,38 @@ u8 Hazard::checkCollision(const Rectangle playerBounds) {
 
 // HazardManager implementations
 HazardManager::HazardManager() {
+    ii = new II<8>();
+}
+
+Hazard* getNewHazard(){
+
 }
 
 void HazardManager::update(int scrollx, PlayerCharacter* player) {
-    
-    for(int i = 0; i < hazardsCt; i++) {
-        hazards[i]->update(scrollx, *player->getHitBox());
+
+    for(int i = 0; i < ii->size(); i++) {
+        HAZARD_STATUS hazardStatus = hazards[ii->at(i)]->update(scrollx, *player->getHitBox());
+        switch(hazardStatus){
+            case HAZARD_STATUS::DELETE:
+                delete hazards[ii->at(i)];
+                ii->push(ii->at(i));
+                break;
+            case HAZARD_STATUS::PERSIST:
+                continue;
+        }
     }
 
-    for(int i = 0; i < hazardsCt; i++) {
-        u8 hazardIndex = hazards[i]->checkCollision(*player->getHitBox());
+    for(int i = 0; i < ii->size(); i++) {
+        u8 hazardIndex = hazards[ii->at(i)]->checkCollision(*player->getHitBox());
         if(hazardIndex){ //if hazardIndex isn't 0, player died
             //death initiate
             player->dies(hazardIndex);
         };
+    }
+
+    //spawn hazards
+    if(scrollx > 512 /*arbitrary*/ && ii->size() == 0){
+        //hazards[ii->pop()] = 
     }
 }
 
@@ -55,10 +73,10 @@ yellowLaserAsset diagonal = {
 };
 
 void HazardManager::createTest() {
-    //hazards[hazardsCt++] = new YellowLaser(464, 24, 520, 72, (u16*)diagonal_laserMap);
-    hazards[hazardsCt++] = new Missile(1024, 110, missileTiles);
-    //hazards[hazardsCt++] = new RedLaser(256, 0, 65);
-    //hazards[hazardsCt++] = new OrangeLaser(256,60,64,orange_64_laserTiles);
+    //hazards[ii->pop()] = new YellowLaser(760, 24, diagonal);
+    hazards[ii->pop()] = new Missile(1024, 110, missileTiles);
+    //hazards[ii->pop()] = new RedLaser(256, 0, 65);
+    //hazards[ii->pop()] = new OrangeLaser(768,60,64,orange_64_laserTiles);
 }
 
 
@@ -83,13 +101,15 @@ YellowLaser::YellowLaser(int x1, int y1, yellowLaserAsset yla) {
     topTile = y1>>3;
 }
 
-void YellowLaser::update(int scrollX, Rectangle playerbounds) {
+HAZARD_STATUS YellowLaser::update(int scrollX, Rectangle playerbounds) {
     //>> 4 for FIXED notation >> 3 for pixel-to-tile ratio
     bool shouldRender = rendered ? false : (scrollX>>7)+32 > leftTile;
     if(shouldRender) render();
 
     bool shouldErase = erased ? false : (scrollX>>7) > leftTile + (tileWidth + 1);
     if(shouldErase) erase();
+
+    return (erased ? HAZARD_STATUS::DELETE : HAZARD_STATUS::PERSIST);
 }
 
 void YellowLaser::render() {
@@ -212,7 +232,7 @@ OrangeLaser::OrangeLaser(int x, int y, int diameter, const unsigned int* assetMa
     obj_aff_identity(aff);
 }
 
-void OrangeLaser::update(int scrollx, Rectangle playerbounds){
+HAZARD_STATUS OrangeLaser::update(int scrollx, Rectangle playerbounds){
     alpha += 30;
     int newX = (fixedX - scrollx) >> 4;
     hitbox->rotate(alpha);
@@ -226,6 +246,8 @@ void OrangeLaser::update(int scrollx, Rectangle playerbounds){
     if(fixedX < scrollx - (16 << 7)  && !erased){
         erase();
     }
+
+    return (erased ? HAZARD_STATUS::DELETE : HAZARD_STATUS::PERSIST);
 }
 
 void OrangeLaser::render() {
@@ -389,13 +411,14 @@ RedLaser::RedLaser(int x, int yIndex, u16 ind) {
     buildLaser(yIndex, ind);
 }
 
-void RedLaser::update(int scrollX, Rectangle playerbounds) {
+HAZARD_STATUS RedLaser::update(int scrollX, Rectangle playerbounds) {
     //frame number
     int dx = ((scrollX - fixedX)>>4)/24;
     if(dx > 0 && dx < 29){
         updateLaser(dx, tileInd);
     }
 
+    return (dx > 29 ? HAZARD_STATUS::DELETE : HAZARD_STATUS::PERSIST);
 }
 
 void RedLaser::render() {
@@ -435,7 +458,7 @@ Missile::Missile(int x, int y, const unsigned int* assetMap) {
     );
 }
 
-void Missile::update(int scrollx, Rectangle playerbounds){
+HAZARD_STATUS Missile::update(int scrollx, Rectangle playerbounds){
     fixedX += velocity;
     // during warning phase, update y
     int newX = (fixedX - scrollx) >> 4;
@@ -446,8 +469,7 @@ void Missile::update(int scrollx, Rectangle playerbounds){
 
     if(scrollx < fixedX - (96 << 7)){ // pre warning
         hitbox->setPos(fixedX>>4, fixedY>>4);
-        obj_set_pos(obj, newX, (fixedY>>4));
-        return;
+        return HAZARD_STATUS::PERSIST;
     }else if(scrollx < fixedX - (64 << 7)){ // initiate warning indicator
         //enable warning
         obj_unhide(obj, ATTR0_REG);
@@ -476,10 +498,10 @@ void Missile::update(int scrollx, Rectangle playerbounds){
         obj_set_pos(obj, newX, (fixedY>>4));
 
         render();
-        return;
+        return HAZARD_STATUS::PERSIST;
     }else{ // remove missile
         erase();
-        return;
+        return HAZARD_STATUS::DELETE;
     }
 
     BFN_SET(obj->attr2, frameInd + 0xC1, ATTR2_ID);
@@ -487,6 +509,7 @@ void Missile::update(int scrollx, Rectangle playerbounds){
 
     hitbox->setPos(fixedX>>4, fixedY>>4);
     obj_set_pos(obj, newX, (fixedY>>4)+2);
+    return HAZARD_STATUS::PERSIST;
 }
 
 void Missile::render() {
